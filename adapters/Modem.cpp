@@ -97,7 +97,7 @@ void Modem::call(const State::Type type, const QVariant &value)
   QString name = TypeToString.value(type);
   if (name.isEmpty())
   {
-    throw astr_global::Exception("Bad State::Type");
+    throw astr_global::Exception("Неверный тип call");
   }
 
   Q_EMIT StateChanged(State(type, State::CallStarted, value));

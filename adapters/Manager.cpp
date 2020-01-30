@@ -13,6 +13,9 @@ bool Manager::isValid() const
 void Manager::reset(const QString &service)
 {
   Q_EMIT StateChanged(State(State::Reset, State::CallStarted));
+
+  _modemsPath.clear();
+
   if (service.isEmpty())
   {
     delete _interface;

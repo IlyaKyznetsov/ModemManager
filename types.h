@@ -45,10 +45,19 @@ public:
     OfonoSimManagerCardIdentifier,      // [readonly]
     OfonoSimManagerServiceProviderName, // [readonly, optional]
     // OfonoNetworkRegistration
+    OfonoNetworkRegistrationGetProperties,
+    OfonoNetworkRegistrationGetOperators,
+    OfonoNetworkRegistrationRegister,
+    OfonoNetworkRegistrationScan,
+    OfonoNetworkRegistrationDeregister,
     OfonoNetworkRegistrationStatus, //[readonly: "unregistered" "registered" "searching" "denied" "unknown" "roaming"];
     OfonoNetworkRegistrationName,   //[readonly];
     OfonoNetworkRegistrationStrength, //[readonly, optional between 0-100 percent]
     // ConnectionManager
+    OfonoConnectionManagerGetProperties,
+    OfonoConnectionManagerGetContexts,
+    OfonoConnectionManagerContextAdded,
+    OfonoConnectionManagerContextRemoved,
     OfonoConnectionManagerAttached,       // [readonly]
     OfonoConnectionManagerRoamingAllowed, // [readwrite]
     OfonoConnectionManagerPowered,        // [readwrite]
@@ -125,12 +134,21 @@ public:
         {Type::OfonoModemManufacturer, "OfonoModemManufacturer"},
         {Type::OfonoModemModel, "OfonoModemModel"},
         {Type::OfonoModemSerial, "OfonoModemSerial"},
-        {Type::OfonoSimManagerGetProperties, "OfonoModemSerial"},
-        {Type::OfonoSimManagerCardIdentifier, "OfonoSimManagerSimCardIdentifier"},
-        {Type::OfonoSimManagerServiceProviderName, "OfonoSimManagerSimServiceProviderName"},
+        {Type::OfonoSimManagerGetProperties, "OfonoSimManagerGetProperties"},
+        {Type::OfonoSimManagerCardIdentifier, "OfonoSimManagerCardIdentifier"},
+        {Type::OfonoSimManagerServiceProviderName, "OfonoSimManagerServiceProviderName"},
+        {Type::OfonoNetworkRegistrationGetProperties, "OfonoNetworkRegistrationGetProperties"},
+        {Type::OfonoNetworkRegistrationGetOperators, "OfonoNetworkRegistrationGetOperators"},
+        {Type::OfonoNetworkRegistrationRegister, "OfonoNetworkRegistrationRegister"},
+        {Type::OfonoNetworkRegistrationScan, "OfonoNetworkRegistrationScan"},
+        {Type::OfonoNetworkRegistrationDeregister, "OfonoNetworkRegistrationDeregister"},
         {Type::OfonoNetworkRegistrationStatus, "OfonoNetworkRegistrationStatus"},
         {Type::OfonoNetworkRegistrationName, "OfonoNetworkRegistrationName"},
         {Type::OfonoNetworkRegistrationStrength, "OfonoNetworkRegistrationStrength"},
+        {Type::OfonoConnectionManagerGetProperties, "OfonoConnectionManagerGetProperties"},
+        {Type::OfonoConnectionManagerGetContexts, "OfonoConnectionManagerGetContexts"},
+        {Type::OfonoConnectionManagerContextAdded, "OfonoConnectionManagerContextAdded"},
+        {Type::OfonoConnectionManagerContextRemoved, "OfonoConnectionManagerContextRemoved"},
         {Type::OfonoConnectionManagerAttached, "OfonoConnectionManagerAttached"},
         {Type::OfonoConnectionManagerRoamingAllowed, "OfonoConnectionManagerRoamingAllowed"},
         {Type::OfonoConnectionManagerPowered, "OfonoConnectionManagerPowered"},

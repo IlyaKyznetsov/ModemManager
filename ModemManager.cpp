@@ -52,7 +52,7 @@ void ModemManager::onStateChanged(const State &state)
 
 void ModemManager::_ofonoManagerChanged(State state)
 {
-  DF() << state;
+  //  DF() << state;
   if (State::Signal == state._status)
   {
     if (State::OfonoServiceUnregistered == state._type)
@@ -67,7 +67,7 @@ void ModemManager::_ofonoManagerChanged(State state)
 
 void ModemManager::_managerChanged(State state)
 {
-  DF() << state;
+  //  DF() << state;
   if (State::Signal == state._status)
   {
     if (State::OfonoManagerModemRemoved == state._type && _modem->path() == state._value.toString())
@@ -79,7 +79,7 @@ void ModemManager::_managerChanged(State state)
 
 void ModemManager::_modemChanged(State state)
 {
-  DF() << state;
+  //  DF() << state;
   // Call ...
 
   if (State::Signal == state._status)
@@ -119,18 +119,24 @@ void ModemManager::_modemChanged(State state)
       break;
       case State::OfonoModemInterfaceNetworkRegistrationAdded:
       {
+        if (_modem->isValid())
+          _networkRegistration->reset(_modem->path());
       }
       break;
       case State::OfonoModemInterfaceNetworkRegistrationRemoved:
       {
+        _networkRegistration->reset();
       }
       break;
       case State::OfonoModemInterfaceConnectionManagerAdded:
       {
+        if (_modem->isValid())
+          _connectionManager->reset(_modem->path());
       }
       break;
       case State::OfonoModemInterfaceConnectionManagerRemoved:
       {
+        _connectionManager->reset();
       }
       break;
       default: break;
@@ -140,7 +146,7 @@ void ModemManager::_modemChanged(State state)
 
 void ModemManager::_simManagerChanged(State state)
 {
-  DF() << state;
+  //  DF() << state;
 }
 
 void ModemManager::_networkRegistrationChanged(State state)
