@@ -35,22 +35,5 @@ Q_DECLARE_METATYPE(ObjectPathPropertiesList)
 QDBusArgument &operator<<(QDBusArgument &, const ObjectPathProperties &);
 const QDBusArgument &operator>>(const QDBusArgument &, ObjectPathProperties &);
 
-namespace Ofono
-{
-void registerObjectPathProperties();
-static const QString SERVICE("org.ofono");
-static const QDBusError NOERROR(QDBusError::NoError, QString());
-
-enum class Processing
-{
-  Unknown = -1, // не инициализирован
-  None,
-  //  Running,
-  Error,
-  ManagerGetModems,
-  ModemGetProperties
-};
-
-} // namespace Ofono
-
+void registerOfonoObjectPathProperties();
 #endif // DBUSTYPES_H

@@ -27,12 +27,12 @@ ofono_connection_context.source_flags = -N -c OfonoConnectionContextInterface
 
 DBUS_INTERFACES += ofono_connection_manager
 ofono_connection_manager.files = dbus/ofono_connection_manager.xml
-ofono_connection_manager.header_flags = -N -c OfonoConnectionManagerInterface -i dbustypes.h
+ofono_connection_manager.header_flags = -N -c OfonoConnectionManagerInterface -i adapters/dbustypes.h
 ofono_connection_manager.source_flags = -N -c OfonoConnectionManagerInterface
 
 DBUS_INTERFACES += ofono_manager
 ofono_manager.files = dbus/ofono_manager.xml
-ofono_manager.header_flags = -N -c OfonoManagerInterface -i dbustypes.h
+ofono_manager.header_flags = -N -c OfonoManagerInterface -i adapters/dbustypes.h
 ofono_manager.source_flags = -N -c OfonoManagerInterface
 
 DBUS_INTERFACES += ofono_modem
@@ -47,7 +47,7 @@ ofono_network_operator.source_flags = -N -c OfonoNetworkOperatorInterface
 
 DBUS_INTERFACES += ofono_network_registration
 ofono_network_registration.files = dbus/ofono_network_registration.xml
-ofono_network_registration.header_flags = -N -c OfonoNetworkRegistrationInterface -i dbustypes.h
+ofono_network_registration.header_flags = -N -c OfonoNetworkRegistrationInterface -i adapters/dbustypes.h
 ofono_network_registration.source_flags = -N -c OfonoNetworkRegistrationInterface
 
 DBUS_INTERFACES += ofono_radio_settings
@@ -76,18 +76,29 @@ OTHER_FILES += $$XML_FILES\
 SOURCES += \
         Global.cpp \
         ModemManager.cpp \
+        adapters/ConnectionContext.cpp \
+        adapters/ConnectionManager.cpp \
+        adapters/Modem.cpp \
+        adapters/NetworkRegistration.cpp \
+        adapters/SimManager.cpp \
+        adapters/dbustypes.cpp \
         adapters/Manager.cpp \
         adapters/OfonoManager.cpp \
-        main.cpp \
-        dbustypes.cpp
+        main.cpp
+
 
 
 HEADERS += \
     Global.h \
     ModemManager.h \
+    adapters/ConnectionContext.h \
+    adapters/ConnectionManager.h \
+    adapters/Modem.h \
+    adapters/NetworkRegistration.h \
+    adapters/SimManager.h \
+    adapters/dbustypes.h \
     adapters/Manager.h \
     adapters/OfonoManager.h \
-    dbustypes.h \
     types.h
 
 # Default rules for deployment.
