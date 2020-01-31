@@ -136,10 +136,12 @@ void ConnectionManager::_getContexts()
 
 void ConnectionManager::call(const State::Type type)
 {
+#warning Написать вызов регистрации в сети и поиска (возможно запро операторов)
 }
 
 void ConnectionManager::call(const State::Type type, const QVariant &value)
 {
   static const QMap<State::Type, QString> TypeToString{{State::OfonoConnectionManagerRoamingAllowed, "RoamingAllowed"},
                                                        {State::OfonoConnectionManagerPowered, "Powered"}};
+#warning Написать изменение свойств (можно скопировать из Modem)
 }
