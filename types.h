@@ -62,7 +62,7 @@ public:
     OfonoConnectionManagerRoamingAllowed, // [readwrite]
     OfonoConnectionManagerPowered,        // [readwrite]
     //    --- OfonoConnectionManagerContexts,
-    // ConnectionContext
+    OfonoConnectionContextGetProperties,
     OfonoConnectionContextActive,               // [readwrite]
     OfonoConnectionContextAccessPointName,      // [readwrite]
     OfonoConnectionContextUsername,             // [readwrite]
@@ -152,6 +152,7 @@ public:
         {Type::OfonoConnectionManagerAttached, "OfonoConnectionManagerAttached"},
         {Type::OfonoConnectionManagerRoamingAllowed, "OfonoConnectionManagerRoamingAllowed"},
         {Type::OfonoConnectionManagerPowered, "OfonoConnectionManagerPowered"},
+        {Type::OfonoConnectionContextGetProperties, "OfonoConnectionContextGetProperties"},
         {Type::OfonoConnectionContextActive, "OfonoConnectionContextActive"},
         {Type::OfonoConnectionContextAccessPointName, "OfonoConnectionContextAccessPointName"},
         {Type::OfonoConnectionContextUsername, "OfonoConnectionContextUsername"},

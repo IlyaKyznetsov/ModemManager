@@ -43,7 +43,7 @@ public:
       bool attached = false;       // [readonly]
       bool roamingAllowed = false; // [readwrite]
       bool powered = false;        // [readwrite]
-      QString connectionContextPath;
+      // QString connectionContextPath;
     };
     struct ConnectionContext
     {
@@ -69,7 +69,8 @@ public:
   };
   explicit ModemManager(QObject *parent = nullptr);
 
-signals:
+Q_SIGNALS:
+  void OfonoStateChanged(const OfonoState &state);
 
 private Q_SLOTS:
   void onStateChanged(const State &state);
@@ -83,16 +84,22 @@ private:
   ConnectionManager *_connectionManager;
   ConnectionContext *_connectionContext;
 
-  void _ofonoManagerChanged(State state);
-  void _managerChanged(State state);
-  void _modemChanged(State state);
-  void _simManagerChanged(State state);
-  void _networkRegistrationChanged(State state);
-  void _connectionManagerChanged(State state);
-  void _connectionContextChanged(State state);
+  void _signalOfonoManager(const State &state);
+  void _signalManager(const State &state);
+  void _signalModem(const State &state);
+  void _signalSimManager(const State &state);
+  void _signalNetworkRegistration(const State &state);
+  void _signalConnectionManager(const State &state);
+  void _signalConnectionContext(const State &state);
 
   State::Type _currentStateType;
   OfonoState _ofonoState;
+
+private Q_SLOTS:
+  void debugOfonoState(const OfonoState &state);
 };
+
+#include <qmetatype.h>
+Q_DECLARE_METATYPE(ModemManager::OfonoState)
 
 #endif // MODEMMANAGER_H

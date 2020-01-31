@@ -52,8 +52,17 @@ void Modem::reset(const QString &path)
   _interface = interface;
   connect(_interface, &OfonoModemInterface::PropertyChanged, [this](const QString &in0, const QDBusVariant &in1) {
     State::Type type = StringToType.value(in0, State::_EMPTYTYPE_);
-    if (State::_EMPTYTYPE_ != type)
-      Q_EMIT StateChanged(State(type, State::Signal, in1.variant()));
+    switch (type)
+    {
+      case State::_EMPTYTYPE_: break;
+      case State::OfonoModemInterfaces:
+      {
+        for (State::Type typeInterface : _modemInterfacesChanged(in1.variant().toStringList()))
+          Q_EMIT StateChanged(State(typeInterface, State::Signal));
+      }
+      break;
+      default: Q_EMIT StateChanged(State(type, State::Signal, in1.variant())); break;
+    }
   });
 
   Q_EMIT StateChanged(State(State::OfonoModemGetProperties, State::CallStarted));

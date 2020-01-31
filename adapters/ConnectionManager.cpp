@@ -15,6 +15,11 @@ bool ConnectionManager::isValid() const
   return _interface && _interface->isValid();
 }
 
+QString ConnectionManager::contextPath() const
+{
+  return (_contextsPath.isEmpty() ? QString() : _contextsPath.first());
+}
+
 void ConnectionManager::reset(const QString &path)
 {
   Q_EMIT StateChanged(State(State::Reset, State::CallStarted));
