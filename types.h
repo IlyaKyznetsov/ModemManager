@@ -71,10 +71,11 @@ public:
     OfonoConnectionContextAuthenticationMethod, // [readwrite]
     OfonoConnectionContextProtocol,             // [readwrite]
     OfonoConnectionContextName,                 // [readwrite]
-    OfonoConnectionContextInterface,            // [readonly, optional]
-    OfonoConnectionContextMethod,               // [readonly, optional]
-    OfonoConnectionContextAddress,              // [readonly, optional]
-    OfonoConnectionContextNetmask               // [readonly, optional]
+    OfonoConnectionContextSettings,
+    OfonoConnectionContextInterface, // [readonly, optional]
+    OfonoConnectionContextMethod,    // [readonly, optional]
+    OfonoConnectionContextAddress,   // [readonly, optional]
+    OfonoConnectionContextNetmask    // [readonly, optional]
   } _type;
 
   enum Status

@@ -13,12 +13,14 @@ public:
   explicit ConnectionContext(QObject *parent = nullptr);
   bool isValid() const;
   void reset(const QString &path = QString());
+  void call(const State::Type type, const QVariant &value);
 
 Q_SIGNALS:
   void StateChanged(const State &state);
 
 private:
   OfonoConnectionContextInterface *_interface;
+  State::Type _currentCallType;
 };
 
 #endif // CONNECTIONCONTEXT_H
