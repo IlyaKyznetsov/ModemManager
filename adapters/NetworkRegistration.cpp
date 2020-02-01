@@ -155,6 +155,6 @@ void NetworkRegistration::call(const State::Type type)
       throw astr_global::Exception("Не реализовано");
     }
     break;
-    default: throw astr_global::Exception("Неверный тип"); break;
+    default: throw astr_global::Exception("Неверный тип");
   }
 }

@@ -137,7 +137,7 @@ void ModemManager::_signalOfonoManager(const State &state)
       _ofonoState.modem.reset();
     }
     break;
-    default: return; break;
+    default: return;
   }
   Q_EMIT OfonoStateChanged(_ofonoState);
 }
@@ -171,7 +171,7 @@ void ModemManager::_signalManager(const State &state)
       _ofonoState.modem.reset();
     }
     break;
-    default: return; break;
+    default: return;
   }
   Q_EMIT OfonoStateChanged(_ofonoState);
 }
@@ -180,7 +180,7 @@ void ModemManager::_signalModem(const State &state)
 {
   // DF() << state;
   if (_ofonoState.modem.isNull())
-    throw astr_global::Exception("Нарушен порядок приема сигнплов от Ofono");
+    throw astr_global::Exception("Нарушен порядок приема сигналов от Ofono");
 
   switch (state._type)
   {
@@ -252,7 +252,7 @@ void ModemManager::_signalModem(const State &state)
       _ofonoState.connectionManager.reset();
     }
     break;
-    default: return; break;
+    default: return;
   }
   Q_EMIT OfonoStateChanged(_ofonoState);
 }
@@ -260,7 +260,7 @@ void ModemManager::_signalModem(const State &state)
 void ModemManager::_signalSimManager(const State &state)
 {
   if (_ofonoState.simManager.isNull())
-    throw astr_global::Exception("Нарушен порядок приема сигнплов от Ofono");
+    throw astr_global::Exception("Нарушен порядок приема сигналов от Ofono");
 
   switch (state._type)
   {
@@ -274,7 +274,7 @@ void ModemManager::_signalSimManager(const State &state)
       _ofonoState.simManager->serviceProviderName = state._value.toString();
     }
     break;
-    default: return; break;
+    default: return;
   }
   Q_EMIT OfonoStateChanged(_ofonoState);
 }
@@ -283,7 +283,7 @@ void ModemManager::_signalNetworkRegistration(const State &state)
 {
   // DF() << state;
   if (_ofonoState.networkRegistration.isNull())
-    throw astr_global::Exception("Нарушен порядок приема сигнплов от Ofono");
+    throw astr_global::Exception("Нарушен порядок приема сигналов от Ofono");
 
   switch (state._type)
   {
@@ -302,7 +302,7 @@ void ModemManager::_signalNetworkRegistration(const State &state)
       _ofonoState.networkRegistration->strength = state._value.toString();
     }
     break;
-    default: return; break;
+    default: return;
   }
   Q_EMIT OfonoStateChanged(_ofonoState);
 }
@@ -311,7 +311,7 @@ void ModemManager::_signalConnectionManager(const State &state)
 {
   // DF() << state;
   if (_ofonoState.connectionManager.isNull())
-    throw astr_global::Exception("Нарушен порядок приема сигнплов от Ofono");
+    throw astr_global::Exception("Нарушен порядок приема сигналов от Ofono");
 
   switch (state._type)
   {
@@ -342,7 +342,7 @@ void ModemManager::_signalConnectionManager(const State &state)
       _ofonoState.connectionContext.reset();
     }
     break;
-    default: return; break;
+    default: return;
   }
   Q_EMIT OfonoStateChanged(_ofonoState);
 }
@@ -412,106 +412,10 @@ void ModemManager::_signalConnectionContext(const State &state)
       _ofonoState.connectionContext->netmask = state._value.toString();
     }
     break;
-    default: return; break;
+    default: return;
   }
   Q_EMIT OfonoStateChanged(_ofonoState);
 }
-
-/*
-void ModemManager::_ofonoManagerChanged(State state)
-{
-  //  DF() << state;
-  if (State::Signal == state._status)
-  {
-    if (State::OfonoServiceUnregistered == state._type)
-    {
-      _modem->reset();
-      _manager->reset();
-    }
-    else if (State::OfonoServiceRegistered == state._type)
-      _manager->reset(Ofono::SERVICE);
-  }
-}
-
-void ModemManager::_managerChanged(State state)
-{
-  //  DF() << state;
-  if (State::Signal == state._status)
-  {
-    if (State::OfonoManagerModemRemoved == state._type && _modem->path() == state._value.toString())
-      _modem->reset();
-    else if (State::OfonoManagerModemAdded == state._type)
-      _modem->reset(state._value.toString());
-  }
-}
-
-void ModemManager::_modemChanged(State state)
-{
-  //  DF() << state;
-  // Call ...
-
-  if (State::Signal == state._status)
-  {
-    switch (state._type)
-    {
-      case State::OfonoModemLockdown:
-      {
-        if (!state._value.toBool())
-          _modem->call(State::OfonoModemLockdown, false);
-      }
-      break;
-      case State::OfonoModemPowered:
-      {
-        if (!state._value.toBool())
-          _modem->call(State::OfonoModemPowered, true);
-      }
-      break;
-      case State::OfonoModemOnline:
-      {
-        if (!state._value.toBool())
-          _modem->call(State::OfonoModemOnline, true);
-      }
-      break;
-      case State::OfonoModemInterfaceSimManagerAdded:
-      {
-        //        D("XXX: State::OfonoModemInterfaceSimManagerAdded" << _modem->isValid() << !_simManager->isValid()
-        //                                                           << _modem->path());
-        if (_modem->isValid())
-          _simManager->reset(_modem->path());
-      }
-      break;
-      case State::OfonoModemInterfaceSimManagerRemoved:
-      {
-        _simManager->reset();
-      }
-      break;
-      case State::OfonoModemInterfaceNetworkRegistrationAdded:
-      {
-        if (_modem->isValid())
-          _networkRegistration->reset(_modem->path());
-      }
-      break;
-      case State::OfonoModemInterfaceNetworkRegistrationRemoved:
-      {
-        _networkRegistration->reset();
-      }
-      break;
-      case State::OfonoModemInterfaceConnectionManagerAdded:
-      {
-        if (_modem->isValid())
-          _connectionManager->reset(_modem->path());
-      }
-      break;
-      case State::OfonoModemInterfaceConnectionManagerRemoved:
-      {
-        _connectionManager->reset();
-      }
-      break;
-      default: break;
-    }
-  }
-}
-*/
 
 void ModemManager::debugOfonoState(const ModemManager::OfonoState &state)
 {

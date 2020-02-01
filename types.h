@@ -56,6 +56,8 @@ public:
     // ConnectionManager
     OfonoConnectionManagerGetProperties,
     OfonoConnectionManagerGetContexts,
+    OfonoConnectionManagerAddContext,
+    OfonoConnectionManagerRemoveContext,
     OfonoConnectionManagerContextAdded,
     OfonoConnectionManagerContextRemoved,
     OfonoConnectionManagerAttached,       // [readonly]
@@ -96,80 +98,92 @@ public:
     // _value = QVariant(Invalid);
   }
 
-  State(Type type, Status state) : _type(type), _status(state) {}
+  State(Type type, Status state) : _type(type), _status(state)
+  {
+  }
 
-  State(Type type, Status state, const QVariant &value) : _type(type), _status(state), _value(value) {}
+  State(Type type, Status state, const QVariant &value) : _type(type), _status(state), _value(value)
+  {
+  }
 
-  State(Type type, Status state, const QDBusError &error) : _type(type), _status(state), _error(error) {}
+  State(Type type, Status state, const QDBusError &error)
+  : _type(type), _status(state), _error(error)
+  {
+  }
 
   State(Type type, Status state, const QVariant &value, const QDBusError &error)
-      : _type(type), _status(state), _value(value), _error(error)
+  : _type(type), _status(state), _value(value), _error(error)
   {
   }
 
   operator QString() const
   {
-    const QMap<Status, QString> statuses = {{Status::Signal, "Signal"},
-                                            {Status::CallStarted, "CallStarted"},
-                                            {Status::CallFinished, "CallFinished"},
-                                            {Status::CallError, "CallError"}};
+    const QMap<Status, QString> statuses = { { Status::Signal, "Signal" },
+                                             { Status::CallStarted, "CallStarted" },
+                                             { Status::CallFinished, "CallFinished" },
+                                             { Status::CallError, "CallError" } };
 
     const QMap<Type, QString> types = {
-        {Type::Reset, "Reset"},
-        {Type::OfonoServiceRegistered, "OfonoServiceRegistered"},
-        {Type::OfonoServiceUnregistered, "OfonoServiceUnregistered"},
-        {Type::OfonoManagerModemAdded, "OfonoModemAdded"},
-        {Type::OfonoManagerModemRemoved, "Ofono::ModemRemoved"},
-        {Type::OfonoManagerGetModems, "Ofono::GetModems"},
-        {Type::OfonoModemGetProperties, "Ofono::ModemGetProperties"},
-        {Type::OfonoModemPowered, "OfonoModemPowered"},
-        {Type::OfonoModemOnline, "OfonoModemOnline"},
-        {Type::OfonoModemLockdown, "OfonoModemLockdown"},
-        {Type::OfonoModemInterfaces, "OfonoModemInterfaces"},
-        {Type::OfonoModemInterfaceSimManagerAdded, "OfonoModemInterfaceSimManagerAdded"},
-        {Type::OfonoModemInterfaceSimManagerRemoved, "OfonoModemInterfaceSimManagerRemoved"},
-        {Type::OfonoModemInterfaceNetworkRegistrationAdded, "OfonoModemInterfaceNetworkRegistrationAdded"},
-        {Type::OfonoModemInterfaceNetworkRegistrationRemoved, "OfonoModemInterfaceNetworkRegistrationRemoved"},
-        {Type::OfonoModemInterfaceConnectionManagerAdded, "OfonoModemInterfaceConnectionManagerAdded"},
-        {Type::OfonoModemInterfaceConnectionManagerRemoved, "OfonoModemInterfaceConnectionManagerRemoved"},
-        {Type::OfonoModemManufacturer, "OfonoModemManufacturer"},
-        {Type::OfonoModemModel, "OfonoModemModel"},
-        {Type::OfonoModemSerial, "OfonoModemSerial"},
-        {Type::OfonoSimManagerGetProperties, "OfonoSimManagerGetProperties"},
-        {Type::OfonoSimManagerCardIdentifier, "OfonoSimManagerCardIdentifier"},
-        {Type::OfonoSimManagerServiceProviderName, "OfonoSimManagerServiceProviderName"},
-        {Type::OfonoNetworkRegistrationGetProperties, "OfonoNetworkRegistrationGetProperties"},
-        {Type::OfonoNetworkRegistrationGetOperators, "OfonoNetworkRegistrationGetOperators"},
-        {Type::OfonoNetworkRegistrationRegister, "OfonoNetworkRegistrationRegister"},
-        {Type::OfonoNetworkRegistrationScan, "OfonoNetworkRegistrationScan"},
-        {Type::OfonoNetworkRegistrationDeregister, "OfonoNetworkRegistrationDeregister"},
-        {Type::OfonoNetworkRegistrationStatus, "OfonoNetworkRegistrationStatus"},
-        {Type::OfonoNetworkRegistrationName, "OfonoNetworkRegistrationName"},
-        {Type::OfonoNetworkRegistrationStrength, "OfonoNetworkRegistrationStrength"},
-        {Type::OfonoConnectionManagerGetProperties, "OfonoConnectionManagerGetProperties"},
-        {Type::OfonoConnectionManagerGetContexts, "OfonoConnectionManagerGetContexts"},
-        {Type::OfonoConnectionManagerContextAdded, "OfonoConnectionManagerContextAdded"},
-        {Type::OfonoConnectionManagerContextRemoved, "OfonoConnectionManagerContextRemoved"},
-        {Type::OfonoConnectionManagerAttached, "OfonoConnectionManagerAttached"},
-        {Type::OfonoConnectionManagerRoamingAllowed, "OfonoConnectionManagerRoamingAllowed"},
-        {Type::OfonoConnectionManagerPowered, "OfonoConnectionManagerPowered"},
-        {Type::OfonoConnectionContextGetProperties, "OfonoConnectionContextGetProperties"},
-        {Type::OfonoConnectionContextActive, "OfonoConnectionContextActive"},
-        {Type::OfonoConnectionContextAccessPointName, "OfonoConnectionContextAccessPointName"},
-        {Type::OfonoConnectionContextUsername, "OfonoConnectionContextUsername"},
-        {Type::OfonoConnectionContextPassword, "OfonoConnectionContextPassword"},
-        {Type::OfonoConnectionContextType, "OfonoConnectionContextType"},
-        {Type::OfonoConnectionContextAuthenticationMethod, "OfonoConnectionContextAuthenticationMethod"},
-        {Type::OfonoConnectionContextProtocol, "OfonoConnectionContextProtocol"},
-        {Type::OfonoConnectionContextName, "OfonoConnectionContextName"},
-        {Type::OfonoConnectionContextInterface, "OfonoConnectionContextInterface"},
-        {Type::OfonoConnectionContextMethod, "OfonoConnectionContextMethod"},
-        {Type::OfonoConnectionContextAddress, "OfonoConnectionContextAddress"},
-        {Type::OfonoConnectionContextNetmask, "OfonoConnectionContextNetmask"}};
+      { Type::Reset, "Reset" },
+      { Type::OfonoServiceRegistered, "OfonoServiceRegistered" },
+      { Type::OfonoServiceUnregistered, "OfonoServiceUnregistered" },
+      { Type::OfonoManagerModemAdded, "OfonoModemAdded" },
+      { Type::OfonoManagerModemRemoved, "Ofono::ModemRemoved" },
+      { Type::OfonoManagerGetModems, "Ofono::GetModems" },
+      { Type::OfonoModemGetProperties, "Ofono::ModemGetProperties" },
+      { Type::OfonoModemPowered, "OfonoModemPowered" },
+      { Type::OfonoModemOnline, "OfonoModemOnline" },
+      { Type::OfonoModemLockdown, "OfonoModemLockdown" },
+      { Type::OfonoModemInterfaces, "OfonoModemInterfaces" },
+      { Type::OfonoModemInterfaceSimManagerAdded, "OfonoModemInterfaceSimManagerAdded" },
+      { Type::OfonoModemInterfaceSimManagerRemoved, "OfonoModemInterfaceSimManagerRemoved" },
+      { Type::OfonoModemInterfaceNetworkRegistrationAdded,
+        "OfonoModemInterfaceNetworkRegistrationAdded" },
+      { Type::OfonoModemInterfaceNetworkRegistrationRemoved,
+        "OfonoModemInterfaceNetworkRegistrationRemoved" },
+      { Type::OfonoModemInterfaceConnectionManagerAdded,
+        "OfonoModemInterfaceConnectionManagerAdded" },
+      { Type::OfonoModemInterfaceConnectionManagerRemoved,
+        "OfonoModemInterfaceConnectionManagerRemoved" },
+      { Type::OfonoModemManufacturer, "OfonoModemManufacturer" },
+      { Type::OfonoModemModel, "OfonoModemModel" },
+      { Type::OfonoModemSerial, "OfonoModemSerial" },
+      { Type::OfonoSimManagerGetProperties, "OfonoSimManagerGetProperties" },
+      { Type::OfonoSimManagerCardIdentifier, "OfonoSimManagerCardIdentifier" },
+      { Type::OfonoSimManagerServiceProviderName, "OfonoSimManagerServiceProviderName" },
+      { Type::OfonoNetworkRegistrationGetProperties, "OfonoNetworkRegistrationGetProperties" },
+      { Type::OfonoNetworkRegistrationGetOperators, "OfonoNetworkRegistrationGetOperators" },
+      { Type::OfonoNetworkRegistrationRegister, "OfonoNetworkRegistrationRegister" },
+      { Type::OfonoNetworkRegistrationScan, "OfonoNetworkRegistrationScan" },
+      { Type::OfonoNetworkRegistrationDeregister, "OfonoNetworkRegistrationDeregister" },
+      { Type::OfonoNetworkRegistrationStatus, "OfonoNetworkRegistrationStatus" },
+      { Type::OfonoNetworkRegistrationName, "OfonoNetworkRegistrationName" },
+      { Type::OfonoNetworkRegistrationStrength, "OfonoNetworkRegistrationStrength" },
+      { Type::OfonoConnectionManagerGetProperties, "OfonoConnectionManagerGetProperties" },
+      { Type::OfonoConnectionManagerGetContexts, "OfonoConnectionManagerGetContexts" },
+      { Type::OfonoConnectionManagerContextAdded, "OfonoConnectionManagerContextAdded" },
+      { Type::OfonoConnectionManagerContextRemoved, "OfonoConnectionManagerContextRemoved" },
+      { Type::OfonoConnectionManagerAttached, "OfonoConnectionManagerAttached" },
+      { Type::OfonoConnectionManagerRoamingAllowed, "OfonoConnectionManagerRoamingAllowed" },
+      { Type::OfonoConnectionManagerPowered, "OfonoConnectionManagerPowered" },
+      { Type::OfonoConnectionContextGetProperties, "OfonoConnectionContextGetProperties" },
+      { Type::OfonoConnectionContextActive, "OfonoConnectionContextActive" },
+      { Type::OfonoConnectionContextAccessPointName, "OfonoConnectionContextAccessPointName" },
+      { Type::OfonoConnectionContextUsername, "OfonoConnectionContextUsername" },
+      { Type::OfonoConnectionContextPassword, "OfonoConnectionContextPassword" },
+      { Type::OfonoConnectionContextType, "OfonoConnectionContextType" },
+      { Type::OfonoConnectionContextAuthenticationMethod,
+        "OfonoConnectionContextAuthenticationMethod" },
+      { Type::OfonoConnectionContextProtocol, "OfonoConnectionContextProtocol" },
+      { Type::OfonoConnectionContextName, "OfonoConnectionContextName" },
+      { Type::OfonoConnectionContextInterface, "OfonoConnectionContextInterface" },
+      { Type::OfonoConnectionContextMethod, "OfonoConnectionContextMethod" },
+      { Type::OfonoConnectionContextAddress, "OfonoConnectionContextAddress" },
+      { Type::OfonoConnectionContextNetmask, "OfonoConnectionContextNetmask" }
+    };
 
     QString type = types.value(_type);
-    if (type.isEmpty())
-      throw astr_global::Exception("Bad State::Type: " + QString::number(_type));
+    if (type.isEmpty()) throw astr_global::Exception("Bad State::Type: " + QString::number(_type));
 
     return "(Type:" + type + "|Status:" + statuses.value(_status, "Invalid") + ")";
   }
