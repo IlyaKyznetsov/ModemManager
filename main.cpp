@@ -1,11 +1,12 @@
-#include <QCoreApplication>
-#include "ModemManager.h"
+#include <QApplication>
+//#include "ModemManager.h"
+#include "test/TestGui.h"
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication a(argc, argv);
-
-    ModemManager mm;
+    QApplication a(argc, argv);
+    TestGui gui;
+    gui.show();
 
     return a.exec();
 }

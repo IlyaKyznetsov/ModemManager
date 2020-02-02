@@ -97,6 +97,14 @@ private:
 
 private Q_SLOTS:
   void debugOfonoState(const OfonoState &state);
+
+public Q_SLOTS:
+  void t_modemPowered(bool value);
+  void t_modemOnline(bool value);
+  void t_modemLockdown(bool value);
+  void t_contextSetAPN(QString value);
+  void t_contextSetUsername(QString& value);
+  void t_contextSetPassword(QString& value);
 };
 
 #include <qmetatype.h>

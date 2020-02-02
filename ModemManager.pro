@@ -1,5 +1,6 @@
-QT -= gui
 QT += dbus
+
+QT += widgets
 
 CONFIG += c++11 console
 CONFIG -= app_bundle
@@ -84,7 +85,8 @@ SOURCES += \
         adapters/dbustypes.cpp \
         adapters/Manager.cpp \
         adapters/OfonoManager.cpp \
-        main.cpp
+        main.cpp \
+        test/TestGui.cpp
 
 
 
@@ -99,9 +101,13 @@ HEADERS += \
     adapters/dbustypes.h \
     adapters/Manager.h \
     adapters/OfonoManager.h \
+    test/TestGui.h \
     types.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+FORMS += \
+    test/TestGui.ui
