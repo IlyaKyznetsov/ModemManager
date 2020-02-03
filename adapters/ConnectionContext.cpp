@@ -67,6 +67,16 @@ void ConnectionContext::reset(const QString &path)
             switch (type)
             {
               case State::_EMPTYTYPE_: break;
+              case State::OfonoConnectionContextSettings:
+              {
+                const QVariantMap settings = qdbus_cast<QVariantMap>(in1.variant());
+                D(settings);
+                for (auto iterator = settings.keyValueBegin(); iterator != settings.keyValueEnd(); ++iterator)
+                {
+                  State::Type type = StringToType.value((*iterator).first, State::_EMPTYTYPE_);
+                  Q_EMIT StateChanged(State(type, State::Signal, (*iterator).second));
+                }
+              }
               default: Q_EMIT StateChanged(State(type, State::Signal, in1.variant())); break;
             }
           });

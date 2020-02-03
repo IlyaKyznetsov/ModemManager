@@ -1,6 +1,7 @@
 #ifndef MODEMMANAGER_H
 #define MODEMMANAGER_H
 
+#include "DeferredCall.h"
 #include "types.h"
 #include <QObject>
 
@@ -67,13 +68,15 @@ public:
     QSharedPointer<ConnectionManager> connectionManager;
     QSharedPointer<ConnectionContext> connectionContext;
   };
-  explicit ModemManager(QObject *parent = nullptr);
+  explicit ModemManager(const int &msCallTimeout = 3000, QObject *parent = nullptr);
+  void setAutoConnection(const bool isAutoConnection);
 
 Q_SIGNALS:
   void OfonoStateChanged(const OfonoState &state);
 
 private Q_SLOTS:
   void onStateChanged(const State &state);
+  void onDeferredCall(State::Type type, const QVariant &value);
 
 private:
   OfonoManager *_ofonoManager;
@@ -83,6 +86,7 @@ private:
   NetworkRegistration *_networkRegistration;
   ConnectionManager *_connectionManager;
   ConnectionContext *_connectionContext;
+  DeferredCall *_deferredCall;
 
   void _signalOfonoManager(const State &state);
   void _signalManager(const State &state);
@@ -91,8 +95,7 @@ private:
   void _signalNetworkRegistration(const State &state);
   void _signalConnectionManager(const State &state);
   void _signalConnectionContext(const State &state);
-
-  State::Type _currentStateType;
+  void autoConnection(const State &state);
   OfonoState _ofonoState;
 
 private Q_SLOTS:
@@ -103,8 +106,9 @@ public Q_SLOTS:
   void t_modemOnline(bool value);
   void t_modemLockdown(bool value);
   void t_contextSetAPN(QString value);
-  void t_contextSetUsername(QString& value);
-  void t_contextSetPassword(QString& value);
+  void t_contextSetUsername(QString value);
+  void t_contextSetPassword(QString value);
+  void t_contextSetActive(bool value);
 };
 
 #include <qmetatype.h>

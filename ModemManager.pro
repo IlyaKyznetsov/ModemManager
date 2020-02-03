@@ -75,6 +75,7 @@ OTHER_FILES += $$XML_FILES\
     qofono-qt5.prf
 
 SOURCES += \
+        DeferredCall.cpp \
         Global.cpp \
         ModemManager.cpp \
         adapters/ConnectionContext.cpp \
@@ -91,6 +92,7 @@ SOURCES += \
 
 
 HEADERS += \
+    DeferredCall.h \
     Global.h \
     ModemManager.h \
     adapters/ConnectionContext.h \
