@@ -9,20 +9,24 @@
 #include "adapters/OfonoManager.h"
 #include "adapters/SimManager.h"
 
-ModemManager::ModemManager(const int &msCallTimeout, QObject *parent)
+ModemManager::ModemManager(const ModemManagerData::Settings &settings, QObject *parent)
     : QObject(parent),
+      _settings(settings),
       _ofonoManager(new OfonoManager(this)),
-      _manager(new Manager(this)),
-      _modem(new Modem(this)),
-      _simManager(new SimManager(this)),
-      _networkRegistration(new NetworkRegistration(this)),
-      _connectionManager(new ConnectionManager(this)),
-      _connectionContext(new ConnectionContext(this)),
-      _deferredCall(new DeferredCall(msCallTimeout, this))
+      _manager(new Manager(_settings.dBusTimeouts.manager, this)),
+      _modem(new Modem(_settings.dBusTimeouts.modem, this)),
+      _simManager(new SimManager(_settings.dBusTimeouts.simManager, this)),
+      _networkRegistration(new NetworkRegistration(_settings.dBusTimeouts.networkRegistration, this)),
+      _connectionManager(new ConnectionManager(_settings.dBusTimeouts.connectionManager, this)),
+      _connectionContext(new ConnectionContext(_settings.dBusTimeouts.connectionContext, this)) /*,
+       _deferredCall(new DeferredCall(_settings.modemManagerimeouts.deferredCall, this))*/
 {
-  connect(this, &ModemManager::OfonoStateChanged, this, &ModemManager::debugOfonoState);
+  DF();
+  _settings.debug();
 
-  connect(_deferredCall, &DeferredCall::SendCallData, this, &ModemManager::onDeferredCall);
+  //  connect(this, &ModemManager::OfonoStateChanged, this, &ModemManager::debugOfonoState);
+
+  //  connect(_deferredCall, &DeferredCall::SendCallData, this, &ModemManager::onDeferredCall);
 
   connect(_ofonoManager, &OfonoManager::StateChanged, this, &ModemManager::onStateChanged);
   connect(_manager, &Manager::StateChanged, this, &ModemManager::onStateChanged);
@@ -35,12 +39,20 @@ ModemManager::ModemManager(const int &msCallTimeout, QObject *parent)
   _ofonoManager->reset(Ofono::SERVICE);
 }
 
+// bool ModemManager::deferredCall(const State::Type type, const QVariant &value)
+//{
+//  return _deferredCall->deferredCall(type, value);
+//}
+
 void ModemManager::onStateChanged(const State &state)
 {
-  QObject *sender_ptr = sender();
-  //  QString sender_str;
   DF() << state;
-  if (State::Signal == state._status)
+
+  QObject *sender_ptr = sender();
+
+  Q_EMIT StateChanged(state);
+
+  if (State::Signal == state.status())
   {
     if (_ofonoManager == sender_ptr)
       _signalOfonoManager(state);
@@ -57,7 +69,6 @@ void ModemManager::onStateChanged(const State &state)
     else if (_connectionContext == sender_ptr)
       _signalConnectionContext(state);
   }
-  autoConnection(state);
 }
 
 void ModemManager::onDeferredCall(State::Type type, const QVariant &value)
@@ -73,6 +84,15 @@ void ModemManager::onDeferredCall(State::Type type, const QVariant &value)
         _modem->call(type, value);
     }
     break;
+    case State::State::OfonoNetworkRegistrationScan:
+    case State::State::OfonoNetworkRegistrationRegister:
+    case State::State::OfonoNetworkRegistrationDeregister:
+    case State::State::OfonoNetworkRegistrationGetOperators:
+    {
+      if (_networkRegistration->isValid())
+        _networkRegistration->call(type);
+    }
+    break;
     case State::OfonoConnectionContextActive:
     {
       if (_connectionContext->isValid())
@@ -86,7 +106,7 @@ void ModemManager::onDeferredCall(State::Type type, const QVariant &value)
 void ModemManager::_signalOfonoManager(const State &state)
 {
   // DF() << state;
-  switch (state._type)
+  switch (state.type())
   {
     case State::OfonoServiceRegistered:
     {
@@ -119,17 +139,17 @@ void ModemManager::_signalOfonoManager(const State &state)
 void ModemManager::_signalManager(const State &state)
 {
   // DF() << state;
-  switch (state._type)
+  switch (state.type())
   {
     case State::OfonoManagerModemAdded:
     {
-      _ofonoState.modem.reset(new OfonoState::Modem());
-      _modem->reset(state._value.toString());
+      _ofonoState.modem.reset(new ModemManagerData::OfonoState::Modem());
+      _modem->reset(state.value().toString());
     }
     break;
     case State::OfonoManagerModemRemoved:
     {
-      if (_modem->path() != state._value.toString())
+      if (_modem->path() != state.value().toString())
         return;
 
       _connectionContext->reset();
@@ -156,55 +176,53 @@ void ModemManager::_signalModem(const State &state)
   if (_ofonoState.modem.isNull())
     throw astr_global::Exception("Нарушен порядок приема сигналов от Ofono");
 
-  switch (state._type)
+  switch (state.type())
   {
     case State::OfonoModemPowered:
     {
-      _ofonoState.modem->powered = state._value.toBool();
+      _ofonoState.modem->powered = state.value().toBool();
     }
     break;
     case State::OfonoModemOnline:
     {
-      _ofonoState.modem->online = state._value.toBool();
+      _ofonoState.modem->online = state.value().toBool();
     }
     break;
     case State::OfonoModemLockdown:
     {
-      _ofonoState.modem->lockdown = state._value.toBool();
+      _ofonoState.modem->lockdown = state.value().toBool();
     }
     break;
     case State::OfonoModemManufacturer:
     {
-      _ofonoState.modem->manufacturer = state._value.toString();
+      _ofonoState.modem->manufacturer = state.value().toString();
     }
     break;
     case State::OfonoModemModel:
     {
-      _ofonoState.modem->model = state._value.toString();
+      _ofonoState.modem->model = state.value().toString();
     }
     break;
     case State::OfonoModemSerial:
     {
-      _ofonoState.modem->serial = state._value.toString();
+      _ofonoState.modem->serial = state.value().toString();
     }
     break;
     case State::OfonoModemInterfaceSimManagerAdded:
     {
-      DF() << "OfonoModemInterfaceSimManagerAdded";
-      _ofonoState.simManager.reset(new OfonoState::SimManager());
+      _ofonoState.simManager.reset(new ModemManagerData::OfonoState::SimManager());
       _simManager->reset(_modem->path());
     }
     break;
     case State::OfonoModemInterfaceSimManagerRemoved:
     {
-      DF() << "OfonoModemInterfaceSimManagerRemoved";
       _simManager->reset();
       _ofonoState.simManager.reset();
     }
     break;
     case State::OfonoModemInterfaceNetworkRegistrationAdded:
     {
-      _ofonoState.networkRegistration.reset(new OfonoState::NetworkRegistration());
+      _ofonoState.networkRegistration.reset(new ModemManagerData::OfonoState::NetworkRegistration());
       _networkRegistration->reset(_modem->path());
     }
     break;
@@ -216,7 +234,7 @@ void ModemManager::_signalModem(const State &state)
     break;
     case State::OfonoModemInterfaceConnectionManagerAdded:
     {
-      _ofonoState.connectionManager.reset(new OfonoState::ConnectionManager());
+      _ofonoState.connectionManager.reset(new ModemManagerData::OfonoState::ConnectionManager());
       _connectionManager->reset(_modem->path());
     }
     break;
@@ -238,16 +256,16 @@ void ModemManager::_signalSimManager(const State &state)
   if (_ofonoState.simManager.isNull())
     throw astr_global::Exception("Нарушен порядок приема сигналов от Ofono");
 
-  switch (state._type)
+  switch (state.type())
   {
     case State::OfonoSimManagerCardIdentifier:
     {
-      _ofonoState.simManager->cardIdentifier = state._value.toString();
+      _ofonoState.simManager->cardIdentifier = state.value().toString();
     }
     break;
     case State::OfonoSimManagerServiceProviderName:
     {
-      _ofonoState.simManager->serviceProviderName = state._value.toString();
+      _ofonoState.simManager->serviceProviderName = state.value().toString();
     }
     break;
     default: return;
@@ -261,21 +279,21 @@ void ModemManager::_signalNetworkRegistration(const State &state)
   if (_ofonoState.networkRegistration.isNull())
     throw astr_global::Exception("Нарушен порядок приема сигналов от Ofono");
 
-  switch (state._type)
+  switch (state.type())
   {
     case State::OfonoNetworkRegistrationStatus:
     {
-      _ofonoState.networkRegistration->status = state._value.toString();
+      _ofonoState.networkRegistration->status = state.value().toString();
     }
     break;
     case State::OfonoNetworkRegistrationName:
     {
-      _ofonoState.networkRegistration->name = state._value.toString();
+      _ofonoState.networkRegistration->name = state.value().toString();
     }
     break;
     case State::OfonoNetworkRegistrationStrength:
     {
-      _ofonoState.networkRegistration->strength = state._value.toString();
+      _ofonoState.networkRegistration->strength = state.value().toString();
     }
     break;
     default: return;
@@ -289,26 +307,26 @@ void ModemManager::_signalConnectionManager(const State &state)
   if (_ofonoState.connectionManager.isNull())
     throw astr_global::Exception("Нарушен порядок приема сигналов от Ofono");
 
-  switch (state._type)
+  switch (state.type())
   {
     case State::OfonoConnectionManagerPowered:
     {
-      _ofonoState.connectionManager->powered = state._value.toBool();
+      _ofonoState.connectionManager->powered = state.value().toBool();
     }
     break;
     case State::OfonoConnectionManagerAttached:
     {
-      _ofonoState.connectionManager->attached = state._value.toBool();
+      _ofonoState.connectionManager->attached = state.value().toBool();
     }
     break;
     case State::OfonoConnectionManagerRoamingAllowed:
     {
-      _ofonoState.connectionManager->roamingAllowed = state._value.toBool();
+      _ofonoState.connectionManager->roamingAllowed = state.value().toBool();
     }
     break;
     case State::OfonoConnectionManagerContextAdded:
     {
-      _ofonoState.connectionContext.reset(new OfonoState::ConnectionContext());
+      _ofonoState.connectionContext.reset(new ModemManagerData::OfonoState::ConnectionContext());
       _connectionContext->reset(_connectionManager->contextPath());
     }
     break;
@@ -326,11 +344,11 @@ void ModemManager::_signalConnectionManager(const State &state)
 void ModemManager::_signalConnectionContext(const State &state)
 {
   DF() << state;
-  switch (state._type)
+  switch (state.type())
   {
     case State::OfonoConnectionContextActive:
     {
-      _ofonoState.connectionContext->active = state._value.toBool();
+      _ofonoState.connectionContext->active = state.value().toBool();
       if (!_ofonoState.connectionContext->active)
       {
         _ofonoState.connectionContext->interface.clear();
@@ -342,57 +360,57 @@ void ModemManager::_signalConnectionContext(const State &state)
     break;
     case State::OfonoConnectionContextAccessPointName:
     {
-      _ofonoState.connectionContext->accessPointName = state._value.toString();
+      _ofonoState.connectionContext->accessPointName = state.value().toString();
     }
     break;
     case State::OfonoConnectionContextUsername:
     {
-      _ofonoState.connectionContext->username = state._value.toString();
+      _ofonoState.connectionContext->username = state.value().toString();
     }
     break;
     case State::OfonoConnectionContextPassword:
     {
-      _ofonoState.connectionContext->password = state._value.toString();
+      _ofonoState.connectionContext->password = state.value().toString();
     }
     break;
     case State::OfonoConnectionContextType:
     {
-      _ofonoState.connectionContext->type = state._value.toString();
+      _ofonoState.connectionContext->type = state.value().toString();
     }
     break;
     case State::OfonoConnectionContextAuthenticationMethod:
     {
-      _ofonoState.connectionContext->authenticationMethod = state._value.toString();
+      _ofonoState.connectionContext->authenticationMethod = state.value().toString();
     }
     break;
     case State::OfonoConnectionContextProtocol:
     {
-      _ofonoState.connectionContext->protocol = state._value.toString();
+      _ofonoState.connectionContext->protocol = state.value().toString();
     }
     break;
     case State::OfonoConnectionContextName:
     {
-      _ofonoState.connectionContext->name = state._value.toString();
+      _ofonoState.connectionContext->name = state.value().toString();
     }
     break;
     case State::OfonoConnectionContextInterface:
     {
-      _ofonoState.connectionContext->interface = state._value.toString();
+      _ofonoState.connectionContext->interface = state.value().toString();
     }
     break;
     case State::OfonoConnectionContextMethod:
     {
-      _ofonoState.connectionContext->method = state._value.toString();
+      _ofonoState.connectionContext->method = state.value().toString();
     }
     break;
     case State::OfonoConnectionContextAddress:
     {
-      _ofonoState.connectionContext->address = state._value.toString();
+      _ofonoState.connectionContext->address = state.value().toString();
     }
     break;
     case State::OfonoConnectionContextNetmask:
     {
-      _ofonoState.connectionContext->netmask = state._value.toString();
+      _ofonoState.connectionContext->netmask = state.value().toString();
     }
     break;
     default: return;
@@ -400,74 +418,7 @@ void ModemManager::_signalConnectionContext(const State &state)
   Q_EMIT OfonoStateChanged(_ofonoState);
 }
 
-void ModemManager::autoConnection(const State &state)
-{
-  if (!_ofonoState.isOfonoConnected)
-    return;
-
-  switch (state.status())
-  {
-    case State::CallFinished:
-    case State::CallError: _deferredCall->clear(state.type()); break;
-    default: break;
-  }
-
-  if (_ofonoState.modem.isNull() || !_modem->isValid())
-    return;
-
-  if (State::OfonoManagerModemAdded == state.type())
-  {
-    _deferredCall->deferredCall(State::OfonoModemLockdown, true);
-    return;
-  }
-
-  if (_ofonoState.modem->lockdown)
-  {
-    _deferredCall->deferredCall(State::OfonoModemLockdown, false);
-    return;
-  }
-
-  if (!_ofonoState.modem->powered)
-  {
-    _deferredCall->deferredCall(State::OfonoModemPowered, true);
-    return;
-  }
-
-  if (!_ofonoState.modem->online)
-  {
-    _deferredCall->deferredCall(State::OfonoModemOnline, true);
-    return;
-  }
-
-  if (_ofonoState.networkRegistration.isNull() || !_networkRegistration->isValid())
-    return;
-
-  if (_ofonoState.connectionManager.isNull() || !_connectionManager->isValid())
-    return;
-
-  if (!_ofonoState.connectionManager->powered)
-  {
-    _deferredCall->deferredCall(State::OfonoConnectionManagerPowered, true);
-    return;
-  }
-
-  if (_ofonoState.connectionContext.isNull() || !_connectionContext->isValid())
-    return;
-
-  if (!_ofonoState.connectionManager->attached)
-  {
-    _deferredCall->deferredCall(State::OfonoModemOnline, false);
-    return;
-  }
-
-  if (!_ofonoState.connectionContext->active)
-  {
-    _deferredCall->deferredCall(State::OfonoConnectionContextActive, true);
-    return;
-  }
-}
-
-void ModemManager::debugOfonoState(const ModemManager::OfonoState &state)
+void ModemManager::debugOfonoState(const ModemManagerData::OfonoState &state)
 {
   D("------------ OfonoState ------------");
   D("Ofono connected:" << state.isOfonoConnected);

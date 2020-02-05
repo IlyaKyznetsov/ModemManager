@@ -17,7 +17,7 @@ Q_SIGNALS:
 
 public:
   bool deferredCall(const State::Type type, const QVariant &value);
-  bool clear(const State::Type type);
+  bool reset(const State::Type type);
 
 private:
   State::Type _type;

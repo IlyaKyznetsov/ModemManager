@@ -3,27 +3,16 @@
 
 #include "Global.h"
 
-TestGui::TestGui(QWidget *parent) : QWidget(parent), mm(new ModemManager)
+TestGui::TestGui(QWidget *parent) : QWidget(parent)
 {
   setupUi(this);
-  connect(mm, &ModemManager::OfonoStateChanged, this, &TestGui::OfonoStateChanged);
-
-  connect(pbModemPowered, &QPushButton::clicked, mm, &ModemManager::t_modemPowered);
-  connect(pbModemOnline, &QPushButton::clicked, mm, &ModemManager::t_modemOnline);
-  connect(pbModemLockdown, &QPushButton::clicked, mm, &ModemManager::t_modemLockdown);
-
-  connect(pbContextAPN, &QPushButton::clicked, [this]() { mm->t_contextSetAPN(contextAPN->text()); });
-  connect(pbContextUsername, &QPushButton::clicked, [this]() { mm->t_contextSetUsername(contextUsername->text()); });
-  connect(pbContextPassword, &QPushButton::clicked, [this]() { mm->t_contextSetPassword(contextPassword->text()); });
-
-  connect(pbContextActive, &QPushButton::clicked, mm, &ModemManager::t_contextSetActive);
 }
 
 TestGui::~TestGui()
 {
 }
 
-void TestGui::OfonoStateChanged(const ModemManager::OfonoState &state)
+void TestGui::OfonoStateChanged(const ModemManagerData::OfonoState &state)
 {
   out->clear();
   out->append("------------ OfonoState ------------");

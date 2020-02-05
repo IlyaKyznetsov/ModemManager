@@ -75,6 +75,8 @@ OTHER_FILES += $$XML_FILES\
     qofono-qt5.prf
 
 SOURCES += \
+        ModemManagerData.cpp \
+        test/TestGui.cpp \
         DeferredCall.cpp \
         Global.cpp \
         ModemManager.cpp \
@@ -87,11 +89,14 @@ SOURCES += \
         adapters/Manager.cpp \
         adapters/OfonoManager.cpp \
         main.cpp \
-        test/TestGui.cpp
+        types.cpp \
+        utils.cpp
 
 
 
 HEADERS += \
+    ModemManagerData.h \
+    test/TestGui.h \
     DeferredCall.h \
     Global.h \
     ModemManager.h \
@@ -103,8 +108,8 @@ HEADERS += \
     adapters/dbustypes.h \
     adapters/Manager.h \
     adapters/OfonoManager.h \
-    test/TestGui.h \
-    types.h
+    types.h \
+    utils.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

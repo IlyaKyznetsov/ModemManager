@@ -25,20 +25,19 @@ bool DeferredCall::deferredCall(const State::Type type, const QVariant &value)
   if (State::_EMPTYTYPE_ != _type)
     return false;
 
-  DF() << State(type, State::_EMPTYSTATUS_) << value;
-
   _type = type;
   _value = value;
   _timer->start();
   return true;
 }
 
-bool DeferredCall::clear(const State::Type type)
+bool DeferredCall::reset(const State::Type type)
 {
-  if (type != _type)
+  if (type == State::_EMPTYTYPE_)
     return false;
 
   _type = State::_EMPTYTYPE_;
   _value.clear();
+  _timer->stop();
   return true;
 }

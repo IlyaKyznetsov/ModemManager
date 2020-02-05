@@ -1,23 +1,20 @@
 #ifndef TESTGUI_H
 #define TESTGUI_H
 
-#include <QWidget>
 #include "ui_TestGui.h"
-#include "ModemManager.h"
+#include <ModemManager.h>
+#include <QWidget>
 
 class TestGui : public QWidget, public Ui::TestGui
 {
-    Q_OBJECT
+  Q_OBJECT
 
 public:
-    explicit TestGui(QWidget *parent = nullptr);
-    ~TestGui();
+  explicit TestGui(QWidget *parent = nullptr);
+  ~TestGui();
 
-private Q_SLOTS:
-    void OfonoStateChanged(const ModemManager::OfonoState &state);
-
-private:
-    ModemManager *mm;
+public Q_SLOTS:
+  void OfonoStateChanged(const ModemManagerData::OfonoState &state);
 };
 
 #endif // TESTGUI_H
