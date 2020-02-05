@@ -1,7 +1,8 @@
 #include "Manager.h"
 #include "ofono_manager_interface.h"
 
-Manager::Manager(QObject *parent) : QObject(parent), _interface(nullptr)
+Manager::Manager(const int &dbusTimeout, QObject *parent)
+    : QObject(parent), _dbusTimeout(dbusTimeout), _interface(nullptr)
 {
 }
 
@@ -31,8 +32,8 @@ void Manager::reset(const QString &service)
     Q_EMIT StateChanged(State(State::Reset, State::CallFinished));
     return;
   }
-
   _interface = interface;
+  _interface->setTimeout(_dbusTimeout);
   connect(_interface, &OfonoManagerInterface::ModemAdded, [this](const QDBusObjectPath &in0) {
     const QString &path = in0.path();
     if (!_modemsPath.contains(path))

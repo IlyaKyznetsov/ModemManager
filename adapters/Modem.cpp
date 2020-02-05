@@ -11,7 +11,8 @@ static const QMap<State::Type, QString> TypeToString{{State::OfonoModemPowered, 
                                                      {State::OfonoModemOnline, "Online"},
                                                      {State::OfonoModemLockdown, "Lockdown"}};
 
-Modem::Modem(QObject *parent) : QObject(parent), _interface(nullptr), _currentCallType(State::_EMPTYTYPE_)
+Modem::Modem(const int &dbusTimeout, QObject *parent)
+    : QObject(parent), _dbusTimeout(dbusTimeout), _interface(nullptr), _currentCallType(State::_EMPTYTYPE_)
 {
 }
 
@@ -50,6 +51,7 @@ void Modem::reset(const QString &path)
   }
 
   _interface = interface;
+  _interface->setTimeout(_dbusTimeout);
   connect(_interface, &OfonoModemInterface::PropertyChanged, [this](const QString &in0, const QDBusVariant &in1) {
     State::Type type = StringToType.value(in0, State::_EMPTYTYPE_);
     switch (type)

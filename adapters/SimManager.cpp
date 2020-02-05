@@ -5,7 +5,8 @@ static const QMap<QString, State::Type> StringToType{
     {"CardIdentifier", State::OfonoSimManagerCardIdentifier},
     {"ServiceProviderName", State::OfonoSimManagerServiceProviderName}};
 
-SimManager::SimManager(QObject *parent) : QObject(parent), _interface(nullptr)
+SimManager::SimManager(const int &dbusTimeout, QObject *parent)
+    : QObject(parent), _dbusTimeout(dbusTimeout), _interface(nullptr)
 {
 }
 
@@ -36,6 +37,7 @@ void SimManager::reset(const QString &path)
   }
 
   _interface = interface;
+  _interface->setTimeout(_dbusTimeout);
   connect(_interface, &OfonoSimManagerInterface::PropertyChanged, [this](const QString &in0, const QDBusVariant &in1) {
     State::Type type = StringToType.value(in0, State::_EMPTYTYPE_);
     if (State::_EMPTYTYPE_ != type)

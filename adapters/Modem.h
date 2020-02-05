@@ -10,7 +10,7 @@ class Modem : public QObject
 {
   Q_OBJECT
 public:
-  explicit Modem(QObject *parent = nullptr);
+  explicit Modem(const int &dbusTimeout, QObject *parent = nullptr);
   bool isValid() const;
   QString path() const;
   void reset(const QString &path = QString());
@@ -20,6 +20,7 @@ Q_SIGNALS:
   void StateChanged(const State &state);
 
 private:
+  const int _dbusTimeout;
   OfonoModemInterface *_interface;
   QStringList _modemInterfaces;
   QList<State::Type> _modemInterfacesChanged(const QStringList &interfaces);

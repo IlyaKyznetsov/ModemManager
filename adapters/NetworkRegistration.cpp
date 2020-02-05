@@ -5,8 +5,8 @@ static const QMap<QString, State::Type> StringToType{{"Name", State::OfonoNetwor
                                                      {"Status", State::OfonoNetworkRegistrationStatus},
                                                      {"Strength", State::OfonoNetworkRegistrationStrength}};
 
-NetworkRegistration::NetworkRegistration(QObject *parent)
-    : QObject(parent), _interface(nullptr), _currentCallType(State::_EMPTYTYPE_)
+NetworkRegistration::NetworkRegistration(const int &dbusTimeout, QObject *parent)
+    : QObject(parent), _dbusTimeout(dbusTimeout), _interface(nullptr), _currentCallType(State::_EMPTYTYPE_)
 {
 }
 
@@ -39,6 +39,7 @@ void NetworkRegistration::reset(const QString &path)
   }
 
   _interface = interface;
+  _interface->setTimeout(_dbusTimeout);
   connect(_interface, &OfonoNetworkRegistrationInterface::PropertyChanged,
           [this](const QString &in0, const QDBusVariant &in1) {
             State::Type type = StringToType.value(in0, State::_EMPTYTYPE_);

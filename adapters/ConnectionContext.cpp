@@ -26,8 +26,8 @@ static const QMap<State::Type, QString> TypeToString{
     {State::OfonoConnectionContextProtocol, "Protocol"},
     {State::OfonoConnectionContextName, "Name"}};
 
-ConnectionContext::ConnectionContext(QObject *parent)
-    : QObject(parent), _interface(nullptr), _currentCallType(State::_EMPTYTYPE_)
+ConnectionContext::ConnectionContext(const int &dbusTimeout, QObject *parent)
+    : QObject(parent), _dbusTimeout(dbusTimeout), _interface(nullptr), _currentCallType(State::_EMPTYTYPE_)
 {
 }
 
@@ -61,6 +61,7 @@ void ConnectionContext::reset(const QString &path)
   }
 
   _interface = interface;
+  _interface->setTimeout(_dbusTimeout);
   connect(_interface, &OfonoConnectionContextInterface::PropertyChanged,
           [this](const QString &in0, const QDBusVariant &in1) {
             State::Type type = StringToType.value(in0, State::_EMPTYTYPE_);
@@ -70,13 +71,13 @@ void ConnectionContext::reset(const QString &path)
               case State::OfonoConnectionContextSettings:
               {
                 const QVariantMap settings = qdbus_cast<QVariantMap>(in1.variant());
-                D(settings);
                 for (auto iterator = settings.keyValueBegin(); iterator != settings.keyValueEnd(); ++iterator)
                 {
                   State::Type type = StringToType.value((*iterator).first, State::_EMPTYTYPE_);
                   Q_EMIT StateChanged(State(type, State::Signal, (*iterator).second));
                 }
               }
+              break;
               default: Q_EMIT StateChanged(State(type, State::Signal, in1.variant())); break;
             }
           });
