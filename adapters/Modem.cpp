@@ -81,7 +81,6 @@ void Modem::reset(const QString &path)
               const QVariantMap &properties = reply.value();
               for (auto iterator = properties.keyValueBegin(); iterator != properties.keyValueEnd(); ++iterator)
               {
-                //                D("---" << (*iterator).first << (*iterator).second);
                 State::Type type = StringToType.value((*iterator).first, State::_EMPTYTYPE_);
                 switch (type)
                 {

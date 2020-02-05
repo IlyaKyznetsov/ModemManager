@@ -11,6 +11,29 @@
 
 ModemManager::ModemManager(const ModemManagerData::Settings &settings, QObject *parent)
     : QObject(parent),
+      autoStates{State(State::_EMPTYTYPE_, State::_EMPTYSTATUS_),             // 0
+                 State(State::OfonoModemGetProperties, State::CallStarted),   // 1
+                 State(State::OfonoModemGetProperties, State::CallFinished),  // 2
+                 State(State::OfonoModemLockdown, State::CallStarted, true),  // 3
+                 State(State::OfonoModemLockdown, State::CallFinished),       // 4
+                 State(State::OfonoModemLockdown, State::Signal, true),       // 5
+                 State(State::OfonoModemLockdown, State::CallStarted, false), // 6
+                 State(State::OfonoModemLockdown, State::CallFinished),       // 7
+                 State(State::OfonoModemLockdown, State::Signal, false),      // 8
+                 State(State::OfonoModemPowered, State::CallStarted, true),   // 9
+                 State(State::OfonoModemPowered, State::CallFinished),        // 10
+                 State(State::OfonoModemPowered, State::Signal, true),        // 11
+                 /*
+                 ----SimManager---- CardIdentifier     : 8970199170501851008
+                 ----ConnectionManager----
+                 --ConnectionContext--
+                                        AccessPointName     : etk.beeline.ru
+                                        Username            : beeline
+                                        Password            : beeline
+                 */
+                 State(State::OfonoModemOnline, State::CallStarted, true), // 12
+                 State(State::OfonoModemOnline, State::CallFinished),      // 13
+                 State(State::OfonoModemOnline, State::Signal, true)},     // 14
       _settings(settings),
       _ofonoManager(new OfonoManager(this)),
       _manager(new Manager(_settings.dBusTimeouts.manager, this)),
@@ -22,6 +45,7 @@ ModemManager::ModemManager(const ModemManagerData::Settings &settings, QObject *
        _deferredCall(new DeferredCall(_settings.modemManagerimeouts.deferredCall, this))*/
 {
   DF();
+
   _settings.debug();
 
   //  connect(this, &ModemManager::OfonoStateChanged, this, &ModemManager::debugOfonoState);
@@ -46,8 +70,6 @@ ModemManager::ModemManager(const ModemManagerData::Settings &settings, QObject *
 
 void ModemManager::onStateChanged(const State &state)
 {
-  DF() << state;
-
   QObject *sender_ptr = sender();
 
   Q_EMIT StateChanged(state);
@@ -69,6 +91,8 @@ void ModemManager::onStateChanged(const State &state)
     else if (_connectionContext == sender_ptr)
       _signalConnectionContext(state);
   }
+
+  _autoStateChangedHandler(state);
 }
 
 void ModemManager::onDeferredCall(State::Type type, const QVariant &value)
@@ -343,7 +367,6 @@ void ModemManager::_signalConnectionManager(const State &state)
 
 void ModemManager::_signalConnectionContext(const State &state)
 {
-  DF() << state;
   switch (state.type())
   {
     case State::OfonoConnectionContextActive:
@@ -416,6 +439,54 @@ void ModemManager::_signalConnectionContext(const State &state)
     default: return;
   }
   Q_EMIT OfonoStateChanged(_ofonoState);
+}
+
+void ModemManager::_autoStateChangedHandler(const State &state)
+{
+  const bool outOfRange = (_autoStateIndex == autoStates.size() - 1);
+
+  if (outOfRange || !(autoStates.at(_autoStateIndex + 1) == state))
+    return;
+
+  _autoStateIndex += 1;
+
+  DF() << state;
+
+  switch (_autoStateIndex)
+  {
+    case 0: break;
+    case 1: break;
+    case 2:
+    {
+      _modem->call(State::OfonoModemLockdown, true);
+    }
+    break;
+    case 3: break;
+    case 4: break;
+    case 5:
+    {
+      _modem->call(State::OfonoModemLockdown, false);
+    }
+    break;
+    case 6: break;
+    case 7: break;
+    case 8:
+    {
+      _modem->call(State::OfonoModemPowered, true);
+    }
+    break;
+    case 9: break;
+    case 10: break;
+    case 11:
+    {
+      _modem->call(State::OfonoModemOnline, true);
+    }
+    break;
+    case 12: break;
+    case 13: break;
+    case 14: break;
+    default: break;
+  }
 }
 
 void ModemManager::debugOfonoState(const ModemManagerData::OfonoState &state)

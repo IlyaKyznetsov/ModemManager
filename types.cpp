@@ -6,24 +6,24 @@ State::State() : _type(_EMPTYTYPE_), _status(_EMPTYSTATUS_)
   // _value = QVariant(Invalid);
 }
 
-State::State(Type type, Status state) : _type(type), _status(state)
+State::State(Type type, Status status) : _type(type), _status(status)
 {
 }
 
-State::State(Type type, Status state, const QVariant &value) : _type(type), _status(state), _value(value)
+State::State(Type type, Status status, const QVariant &value) : _type(type), _status(status), _value(value)
 {
 }
 
-State::State(Type type, Status state, const QDBusError &error) : _type(type), _status(state), _error(error)
+State::State(Type type, Status status, const QDBusError &error) : _type(type), _status(status), _error(error)
 {
 }
 
-State::State(Type type, Status state, const QVariant &value, const QDBusError &error)
-    : _type(type), _status(state), _value(value), _error(error)
+State::State(Type type, Status status, const QVariant &value, const QDBusError &error)
+    : _type(type), _status(status), _value(value), _error(error)
 {
 }
 
-State::OfonoErrorType State::errorType(const QDBusError &error)
+State::OfonoErrorType State::errorType(const QDBusError &error) const
 {
   switch (error.type())
   {
@@ -49,6 +49,14 @@ State::OfonoErrorType State::errorType(const QDBusError &error)
   }
 }
 
+bool State::operator==(const State &state) const
+{
+  //  DF() << *this << state;
+
+  return _type == state._type && _status == state._status &&
+         (_value.isValid() && state._value.isValid() ? _value == state._value : true);
+}
+
 State::operator QString() const
 {
   const QMap<Status, QString> statuses = {{Status::Signal, "Signal"},
@@ -61,10 +69,10 @@ State::operator QString() const
       {Type::Reset, "Reset"},
       {Type::OfonoServiceRegistered, "OfonoServiceRegistered"},
       {Type::OfonoServiceUnregistered, "OfonoServiceUnregistered"},
-      {Type::OfonoManagerModemAdded, "OfonoModemAdded"},
-      {Type::OfonoManagerModemRemoved, "Ofono::ModemRemoved"},
-      {Type::OfonoManagerGetModems, "Ofono::GetModems"},
-      {Type::OfonoModemGetProperties, "Ofono::ModemGetProperties"},
+      {Type::OfonoManagerModemAdded, "OfonoManagerModemAdded"},
+      {Type::OfonoManagerModemRemoved, "OfonoManagerModemRemoved"},
+      {Type::OfonoManagerGetModems, "OfonoGetModems"},
+      {Type::OfonoModemGetProperties, "OfonoModemGetProperties"},
       {Type::OfonoModemPowered, "OfonoModemPowered"},
       {Type::OfonoModemOnline, "OfonoModemOnline"},
       {Type::OfonoModemLockdown, "OfonoModemLockdown"},
@@ -115,5 +123,6 @@ State::operator QString() const
   if (type.isEmpty())
     throw astr_global::Exception("Bad State::Type: " + QString::number(_type));
 
-  return "(Type:" + type + "|Status:" + statuses.value(_status, "Invalid") + ")";
+  return "(State::Type::" + type + "|State::Status::" + statuses.value(_status, "Invalid") +
+         "|value=" + value().toString() + ")";
 }

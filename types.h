@@ -107,15 +107,16 @@ public:
   };
 
   State();
-  State(Type type, Status state);
-  State(Type type, Status state, const QVariant &value);
-  State(Type type, Status state, const QDBusError &error);
-  State(Type type, Status state, const QVariant &value, const QDBusError &error);
+  State(Type type, Status status);
+  State(Type type, Status status, const QVariant &value);
+  State(Type type, Status status, const QDBusError &error);
+  State(Type type, Status status, const QVariant &value, const QDBusError &error);
   Type type() const { return _type; }
   Status status() const { return _status; }
   QVariant value() const { return _value; }
   QDBusError error() const { return _error; }
-  OfonoErrorType errorType(const QDBusError &error);
+  OfonoErrorType errorType(const QDBusError &error) const;
+  bool operator==(const State &state) const;
   operator QString() const;
 
 private:

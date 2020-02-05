@@ -16,6 +16,8 @@ class ConnectionContext;
 
 class ModemManager : public QObject
 {
+  const QList<State> autoStates;
+
   Q_OBJECT
 public:
   explicit ModemManager(const ModemManagerData::Settings &settings, QObject *parent = nullptr);
@@ -39,6 +41,7 @@ private:
   ConnectionContext *_connectionContext;
   //  DeferredCall *_deferredCall;
   ModemManagerData::OfonoState _ofonoState;
+  int _autoStateIndex = 0;
 
   void _signalOfonoManager(const State &state);
   void _signalManager(const State &state);
@@ -47,6 +50,7 @@ private:
   void _signalNetworkRegistration(const State &state);
   void _signalConnectionManager(const State &state);
   void _signalConnectionContext(const State &state);
+  void _autoStateChangedHandler(const State &state);
 
 private Q_SLOTS:
   void debugOfonoState(const ModemManagerData::OfonoState &state);

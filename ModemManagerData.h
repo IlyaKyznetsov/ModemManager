@@ -109,6 +109,15 @@ struct OfonoState
   QSharedPointer<ConnectionContext> connectionContext;
 };
 
+enum AutoConnectionState
+{
+  TERMINATE = -1,
+  STOP,
+  START,
+  MODEMGETPROPERTIES,
+  MODEMGETLOCKDOWN,
+};
+
 } // namespace ModemManagerData
 
 #include <qmetatype.h>
