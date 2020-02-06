@@ -43,11 +43,6 @@ ModemManager::ModemManager(const ModemManagerData::Settings &settings, QObject *
                   State(State::OfonoModemOnline, State::CallFinished),      // 24
                   State(State::OfonoModemOnline, State::Signal, true)},     // 25
       _autoStateIterator(_autoStates.begin()),
-      _modemStateIterator(_autoStates.begin()),
-      _simManagerStateIterator(_autoStates.cend() + 0),
-      _networkRegistrationStateIterator(_autoStates.cend() + 0),
-      _connectionManagerStateIterator(_autoStates.cend() + 0),
-      _connectionContextStateIterator(_autoStates.cend() + 0),
       _settings(settings),
       _ofonoManager(new OfonoManager(this)),
       _manager(new Manager(_settings.dBusTimeouts.manager, this)),

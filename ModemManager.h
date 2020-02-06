@@ -31,12 +31,6 @@ private Q_SLOTS:
 private:
   const QVector<State> _autoStates;
   QVector<State>::const_iterator _autoStateIterator;
-  QVector<State>::const_iterator _modemStateIterator;
-  QVector<State>::const_iterator _simManagerStateIterator;
-  QVector<State>::const_iterator _networkRegistrationStateIterator;
-  QVector<State>::const_iterator _connectionManagerStateIterator;
-  QVector<State>::const_iterator _connectionContextStateIterator;
-
   const ModemManagerData::Settings _settings;
   OfonoManager *_ofonoManager;
   Manager *_manager;
