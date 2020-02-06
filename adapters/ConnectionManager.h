@@ -14,6 +14,7 @@ public:
   bool isValid() const;
   QString contextPath() const;
   bool isContext(const QString &path) const;
+  int contextsCount() const;
   void reset(const QString &path = QString());
   void call(const State::Type type, const QVariant &value);
 

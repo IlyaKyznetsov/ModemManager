@@ -51,10 +51,13 @@ State::OfonoErrorType State::errorType(const QDBusError &error) const
 
 bool State::operator==(const State &state) const
 {
-  //  DF() << *this << state;
+  if (!(_type == state._type && _status == state._status))
+    return false;
 
-  return _type == state._type && _status == state._status &&
-         (_value.isValid() && state._value.isValid() ? _value == state._value : true);
+  if (true == _value.isValid() && true == state._value.isValid())
+    return _value == state._value;
+
+  return true;
 }
 
 State::operator QString() const
@@ -99,6 +102,8 @@ State::operator QString() const
       {Type::OfonoNetworkRegistrationStrength, "OfonoNetworkRegistrationStrength"},
       {Type::OfonoConnectionManagerGetProperties, "OfonoConnectionManagerGetProperties"},
       {Type::OfonoConnectionManagerGetContexts, "OfonoConnectionManagerGetContexts"},
+      {Type::OfonoConnectionManagerAddContext, "OfonoConnectionManagerAddContext"},
+      {Type::OfonoConnectionManagerRemoveContext, "OfonoConnectionManagerRemoveContext"},
       {Type::OfonoConnectionManagerContextAdded, "OfonoConnectionManagerContextAdded"},
       {Type::OfonoConnectionManagerContextRemoved, "OfonoConnectionManagerContextRemoved"},
       {Type::OfonoConnectionManagerAttached, "OfonoConnectionManagerAttached"},

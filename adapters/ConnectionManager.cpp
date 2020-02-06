@@ -25,6 +25,11 @@ bool ConnectionManager::isContext(const QString &path) const
   return _contextsPath.contains(path);
 }
 
+int ConnectionManager::contextsCount() const
+{
+  return _contextsPath.size();
+}
+
 void ConnectionManager::reset(const QString &path)
 {
   Q_EMIT StateChanged(State(State::Reset, State::CallStarted));

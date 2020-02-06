@@ -11,29 +11,43 @@
 
 ModemManager::ModemManager(const ModemManagerData::Settings &settings, QObject *parent)
     : QObject(parent),
-      autoStates{State(State::_EMPTYTYPE_, State::_EMPTYSTATUS_),             // 0
-                 State(State::OfonoModemGetProperties, State::CallStarted),   // 1
-                 State(State::OfonoModemGetProperties, State::CallFinished),  // 2
-                 State(State::OfonoModemLockdown, State::CallStarted, true),  // 3
-                 State(State::OfonoModemLockdown, State::CallFinished),       // 4
-                 State(State::OfonoModemLockdown, State::Signal, true),       // 5
-                 State(State::OfonoModemLockdown, State::CallStarted, false), // 6
-                 State(State::OfonoModemLockdown, State::CallFinished),       // 7
-                 State(State::OfonoModemLockdown, State::Signal, false),      // 8
-                 State(State::OfonoModemPowered, State::CallStarted, true),   // 9
-                 State(State::OfonoModemPowered, State::CallFinished),        // 10
-                 State(State::OfonoModemPowered, State::Signal, true),        // 11
-                 /*
-                 ----SimManager---- CardIdentifier     : 8970199170501851008
-                 ----ConnectionManager----
-                 --ConnectionContext--
-                                        AccessPointName     : etk.beeline.ru
-                                        Username            : beeline
-                                        Password            : beeline
-                 */
-                 State(State::OfonoModemOnline, State::CallStarted, true), // 12
-                 State(State::OfonoModemOnline, State::CallFinished),      // 13
-                 State(State::OfonoModemOnline, State::Signal, true)},     // 14
+      _autoStates{State(State::_EMPTYTYPE_, State::_EMPTYSTATUS_),             // 0
+                  State(State::OfonoModemGetProperties, State::CallStarted),   // 1
+                  State(State::OfonoModemGetProperties, State::CallFinished),  // 2
+                  State(State::OfonoModemLockdown, State::CallStarted, true),  // 3
+                  State(State::OfonoModemLockdown, State::CallFinished),       // 4
+                  State(State::OfonoModemLockdown, State::Signal, true),       // 5
+                  State(State::OfonoModemLockdown, State::CallStarted, false), // 6
+                  State(State::OfonoModemLockdown, State::CallFinished),       // 7
+                  State(State::OfonoModemLockdown, State::Signal, false),      // 8
+                  State(State::OfonoModemPowered, State::CallStarted, true),   // 9
+                  State(State::OfonoModemPowered, State::CallFinished),        // 10
+                  State(State::OfonoModemPowered, State::Signal, true),        // 11
+                  //
+                  State(State::OfonoConnectionManagerGetProperties, State::CallStarted),  // 12
+                  State(State::OfonoConnectionManagerGetProperties, State::CallFinished), // 13
+                  State(State::OfonoConnectionManagerGetContexts, State::CallStarted),    // 14
+                  State(State::OfonoConnectionManagerGetContexts, State::CallFinished),   // 15
+                  //
+                  State(State::OfonoConnectionManagerRemoveContext, State::Status::CallStarted),  // 16
+                  State(State::OfonoConnectionManagerRemoveContext, State::Status::CallFinished), // 17
+                  State(State::OfonoConnectionManagerContextRemoved, State::Status::Signal),      // 18
+                  //
+                  State(State::OfonoConnectionManagerAddContext, State::Status::CallStarted),  // 19
+                  State(State::OfonoConnectionManagerAddContext, State::Status::CallFinished), // 20
+
+                  State(State::OfonoConnectionContextGetProperties, State::CallStarted),  // 21
+                  State(State::OfonoConnectionContextGetProperties, State::CallFinished), // 22
+                  //
+                  State(State::OfonoModemOnline, State::CallStarted, true), // 23
+                  State(State::OfonoModemOnline, State::CallFinished),      // 24
+                  State(State::OfonoModemOnline, State::Signal, true)},     // 25
+      _autoStateIterator(_autoStates.begin()),
+      _modemStateIterator(_autoStates.begin()),
+      _simManagerStateIterator(_autoStates.cend() + 0),
+      _networkRegistrationStateIterator(_autoStates.cend() + 0),
+      _connectionManagerStateIterator(_autoStates.cend() + 0),
+      _connectionContextStateIterator(_autoStates.cend() + 0),
       _settings(settings),
       _ofonoManager(new OfonoManager(this)),
       _manager(new Manager(_settings.dBusTimeouts.manager, this)),
@@ -443,48 +457,241 @@ void ModemManager::_signalConnectionContext(const State &state)
 
 void ModemManager::_autoStateChangedHandler(const State &state)
 {
-  const bool outOfRange = (_autoStateIndex == autoStates.size() - 1);
+  if (state.type() == State::OfonoManagerModemRemoved)
+  {
+    _autoStateIterator = _autoStates.cend();
+    return;
+  }
+  else if (state.type() == State::OfonoModemGetProperties && State::CallStarted == state.status())
+  {
+    _autoStateIterator = _autoStates.cbegin();
+  }
 
-  if (outOfRange || !(autoStates.at(_autoStateIndex + 1) == state))
+  if (state.status() == State::CallError)
+  {
+    D("ERROR:" << state.error().message());
+  }
+
+  /*
+QVector<State>::const_iterator *p_iterator = nullptr;
+
+if (_modem == sender_ptr)
+  p_iterator = &_modemStateIterator;
+else if (_simManager == sender_ptr)
+  p_iterator = &_simManagerStateIterator;
+else if (_networkRegistration == sender_ptr)
+  p_iterator = &_networkRegistrationStateIterator;
+else if (_connectionManager == sender_ptr)
+  p_iterator = &_connectionManagerStateIterator;
+else if (_connectionContext == sender_ptr)
+  p_iterator = &_connectionContextStateIterator;
+else
+  return;
+
+
+  if (p_iterator && (*p_iterator) == _autoStates.cend())
+    return;
+    */
+  if (_autoStateIterator == _autoStates.cend())
     return;
 
-  _autoStateIndex += 1;
+  D("---START---:" << state << *_autoStateIterator);
 
-  DF() << state;
+  QVector<State>::const_iterator nextIterator = _autoStateIterator + 1;
+  if (nextIterator == _autoStates.cend() || nextIterator->operator!=(state))
+    return;
 
-  switch (_autoStateIndex)
+  const int index = nextIterator - _autoStates.begin();
+
+  switch (index)
   {
-    case 0: break;
-    case 1: break;
-    case 2:
+    case 1:
     {
-      _modem->call(State::OfonoModemLockdown, true);
+      ++_autoStateIterator;
+      D("XXX1:" << index << state << *_autoStateIterator);
     }
     break;
-    case 3: break;
-    case 4: break;
+    case 2:
+    {
+      _autoStateIterator += (_ofonoState.modem->lockdown ? 4 : 1);
+      D("XXX2:" << index << state << *_autoStateIterator);
+      _modem->call(State::OfonoModemLockdown, !_ofonoState.modem->lockdown);
+    }
+    break;
+    case 3:
+    {
+      ++_autoStateIterator;
+      D("XXX3:" << index << state << *_autoStateIterator);
+    }
+    break;
+    case 4:
+    {
+      ++_autoStateIterator;
+      D("XXX4:" << index << state << *_autoStateIterator);
+    }
+    break;
     case 5:
     {
+      ++_autoStateIterator;
+      D("XXX5:" << index << state << *_autoStateIterator);
       _modem->call(State::OfonoModemLockdown, false);
     }
     break;
-    case 6: break;
-    case 7: break;
+    case 6:
+    {
+      ++_autoStateIterator;
+      D("XXX6:" << index << state << *_autoStateIterator);
+    }
+    break;
+    case 7:
+    {
+      ++_autoStateIterator;
+      D("XXX7:" << index << state << *_autoStateIterator);
+    }
+    break;
     case 8:
     {
+      ++_autoStateIterator;
+      D("XXX8:" << index << state << *_autoStateIterator);
       _modem->call(State::OfonoModemPowered, true);
     }
     break;
-    case 9: break;
-    case 10: break;
+    case 9:
+    {
+      ++_autoStateIterator;
+      D("XXX9:" << index << state << *_autoStateIterator);
+    }
+    break;
+    case 10:
+    {
+      ++_autoStateIterator;
+      D("XXX10:" << index << state << *_autoStateIterator);
+    }
+    break;
     case 11:
     {
+      ++_autoStateIterator;
+      D("XXX11:" << index << state << *_autoStateIterator);
+    }
+    break;
+    case 12:
+    {
+      ++_autoStateIterator;
+      D("XXX12:" << index << state << *_autoStateIterator);
+    }
+    break;
+    case 13:
+    {
+      ++_autoStateIterator;
+      D("XXX13:" << index << state << *_autoStateIterator);
+    }
+    break;
+    case 14:
+    {
+      ++_autoStateIterator;
+      D("XXX14:" << index << state << *_autoStateIterator);
+    }
+    break;
+    case 15:
+    {
+      ++_autoStateIterator;
+      D("XXX15:" << index << state << *_autoStateIterator);
+
+      D("COUNT:" << _connectionManager->contextsCount());
+      switch (_connectionManager->contextsCount())
+      {
+        case 0:
+        {
+          _autoStateIterator += 3;
+          _connectionManager->call(State::OfonoConnectionManagerAddContext, "internet");
+        }
+        break;
+        case 1:
+        {
+          _autoStateIterator += 5;
+        }
+        break;
+        default:
+        {
+          _autoStateIterator += 1;
+          _connectionManager->call(State::OfonoConnectionManagerRemoveContext, _connectionManager->contextPath());
+        }
+        break;
+      }
+      /// for Test:
+      /// _connectionManager->call(State::OfonoConnectionManagerAddContext, "internet");
+    }
+    break;
+    case 16:
+    {
+      ++_autoStateIterator;
+      D("XXX16:" << index << state << *_autoStateIterator);
+    }
+    break;
+    case 17:
+    {
+      ++_autoStateIterator;
+      D("XXX17:" << index << state << *_autoStateIterator);
+    }
+    break;
+    case 18:
+    {
+      if (_connectionManager->contextsCount() > 1)
+      {
+        _autoStateIterator -= 2;
+        /// D("RRRRRRRRRR:" << _connectionManager->contextPath());
+        _connectionManager->call(State::OfonoConnectionManagerRemoveContext, _connectionManager->contextPath());
+      }
+      else
+      {
+        _autoStateIterator += 2;
+      }
+      D("XXX18:" << index << state << *_autoStateIterator);
+    }
+    break;
+    case 19:
+    {
+      ++_autoStateIterator;
+      D("XXX19:" << index << state << *_autoStateIterator);
+    }
+    break;
+    case 20:
+    {
+      ++_autoStateIterator;
+      D("XXX20:" << index << state << *_autoStateIterator);
+    }
+    break;
+    case 21:
+    {
+      ++_autoStateIterator;
+      D("XXX21:" << index << state << *_autoStateIterator);
+    }
+    break;
+    case 22:
+    {
+      ++_autoStateIterator;
+      D("XXX22:" << index << state << *_autoStateIterator);
       _modem->call(State::OfonoModemOnline, true);
     }
     break;
-    case 12: break;
-    case 13: break;
-    case 14: break;
+    case 23:
+    {
+      ++_autoStateIterator;
+      D("XXX23:" << index << state << *_autoStateIterator);
+    }
+    break;
+    case 24:
+    {
+      ++_autoStateIterator;
+      D("XXX23:" << index << state << *_autoStateIterator);
+    }
+    break;
+    case 25:
+    {
+      ++_autoStateIterator;
+      D("XXX23:" << index << state << *_autoStateIterator);
+    }
+    break;
     default: break;
   }
 }

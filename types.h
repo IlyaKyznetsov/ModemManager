@@ -117,6 +117,7 @@ public:
   QDBusError error() const { return _error; }
   OfonoErrorType errorType(const QDBusError &error) const;
   bool operator==(const State &state) const;
+  bool operator!=(const State &state) const { return !this->operator==(state); }
   operator QString() const;
 
 private:
