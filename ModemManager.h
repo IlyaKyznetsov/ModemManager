@@ -13,6 +13,7 @@ class SimManager;
 class NetworkRegistration;
 class ConnectionManager;
 class ConnectionContext;
+class Automator;
 
 class ModemManager : public QObject
 {
@@ -29,8 +30,6 @@ private Q_SLOTS:
   void onDeferredCall(State::Type type, const QVariant &value);
 
 private:
-  const QVector<State> _autoStates;
-  QVector<State>::const_iterator _autoStateIterator;
   const ModemManagerData::Settings _settings;
   OfonoManager *_ofonoManager;
   Manager *_manager;
@@ -41,6 +40,8 @@ private:
   ConnectionContext *_connectionContext;
   //  DeferredCall *_deferredCall;
   ModemManagerData::OfonoState _ofonoState;
+
+  Automator* _automator;
 
   void _signalOfonoManager(const State &state);
   void _signalManager(const State &state);

@@ -75,6 +75,7 @@ OTHER_FILES += $$XML_FILES\
     qofono-qt5.prf
 
 SOURCES += \
+        Automator.cpp \
         ModemManagerData.cpp \
         test/TestGui.cpp \
         DeferredCall.cpp \
@@ -95,6 +96,7 @@ SOURCES += \
 
 
 HEADERS += \
+    Automator.h \
     ModemManagerData.h \
     test/TestGui.h \
     DeferredCall.h \
@@ -117,4 +119,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 FORMS += \
+    test/TestGui.ui \
     test/TestGui.ui
