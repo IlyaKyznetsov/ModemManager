@@ -1,41 +1,139 @@
 #include "Automator.h"
 #include "Global.h"
-
+#include "adapters/Modem.h"
 
 Automator::Automator(QObject *parent)
 : QObject(parent),
   _statesTodo{
-    State(State::OfonoManagerModemRemoved, State::Signal),       // 0
-    State(State::OfonoModemGetProperties, State::CallStarted),   // 1
-    State(State::OfonoModemGetProperties, State::CallFinished),  // 2
-    State(State::OfonoModemLockdown, State::CallStarted, true),  // 3
-    State(State::OfonoModemLockdown, State::CallFinished),       // 4
-    State(State::OfonoModemLockdown, State::Signal, true),       // 5
-    State(State::OfonoModemLockdown, State::CallStarted, false), // 6
-    State(State::OfonoModemLockdown, State::CallFinished),       // 7
-    State(State::OfonoModemLockdown, State::Signal, false),      // 8
-    State(State::OfonoModemPowered, State::CallStarted, true),   // 9
-    State(State::OfonoModemPowered, State::CallFinished),        // 10
-    State(State::OfonoModemPowered, State::Signal, true),        // 11
+    StateItem(
+    State(State::OfonoManagerModemRemoved, State::Signal),
+    [](QObject *sender_ptr) {
+      DF() << "--- State::OfonoManagerModemRemoved, State::Signal";
+      Q_UNUSED(sender_ptr)
+    },
+    [](QObject *sender_ptr) {
+      DF() << "+++ State::OfonoManagerModemRemoved, State::CallStarted";
+      Q_UNUSED(sender_ptr)
+    }), // 0
+    StateItem(
+    State(State::OfonoModemGetProperties, State::CallStarted),
+    [](QObject *sender_ptr) {
+      DF() << "--- State::OfonoModemGetProperties, State::CallStarted";
+      Q_UNUSED(sender_ptr)
+    },
+    [](QObject *sender_ptr) {
+      DF() << "+++ State::OfonoModemGetProperties, State::CallStarted";
+      Q_UNUSED(sender_ptr)
+    }), // 1
+    StateItem(
+    State(State::OfonoModemGetProperties, State::CallFinished),
+    [](QObject *sender_ptr) { DF() << "--- State::OfonoModemGetProperties, State::CallFinished"; },
+    [](QObject *sender_ptr) {
+      DF() << "+++ State::OfonoModemGetProperties, State::CallFinished";
+      qobject_cast<Modem *>(sender_ptr)->call(State::OfonoModemLockdown, true);
+    }), // 2
+    StateItem(
+    State(State::OfonoModemLockdown, State::CallStarted, true),
+    [](QObject *sender_ptr) { DF() << "--- State::OfonoModemLockdown, State::CallStarted, true"; },
+    [](QObject *sender_ptr) { DF() << "+++ State::OfonoModemLockdown, State::CallStarted, true"; }), // 3
+    StateItem(
+    State(State::OfonoModemLockdown, State::CallFinished),
+    [](QObject *sender_ptr) { DF() << "---"; },
+    [](QObject *sender_ptr) { DF() << "+++"; }), // 4
+    StateItem(
+    State(State::OfonoModemLockdown, State::Signal, true),
+    [](QObject *sender_ptr) { DF() << "---"; },
+    [](QObject *sender_ptr) { DF() << "+++"; }), // 5
+    StateItem(
+    State(State::OfonoModemLockdown, State::CallStarted, false),
+    [](QObject *sender_ptr) { DF() << "---"; },
+    [](QObject *sender_ptr) { DF() << "+++"; }), // 6
+    StateItem(
+    State(State::OfonoModemLockdown, State::CallFinished),
+    [](QObject *sender_ptr) { DF() << "---"; },
+    [](QObject *sender_ptr) { DF() << "+++"; }), // 7
+    StateItem(
+    State(State::OfonoModemLockdown, State::Signal, false),
+    [](QObject *sender_ptr) { DF() << "---"; },
+    [](QObject *sender_ptr) { DF() << "+++ State(State::OfonoModemLockdown, State::Signal, false)"; }), // 8
+    StateItem(
+    State(State::OfonoModemPowered, State::CallStarted, true),
+    [](QObject *sender_ptr) { DF() << "---"; },
+    [](QObject *sender_ptr) {
+      DF() << "+++ State(State::OfonoModemPowered, State::CallStarted, true)";
+    }), // 9
+    StateItem(
+    State(State::OfonoModemPowered, State::CallFinished),
+    [](QObject *sender_ptr) { DF() << "---"; },
+    [](QObject *sender_ptr) {
+      DF() << "+++ State(State::OfonoModemPowered, State::CallFinished)";
+      qobject_cast<Modem *>(sender_ptr)->call(State::OfonoModemLockdown, true);
+    }), // 10
+    StateItem(
+    State(State::OfonoModemPowered, State::Signal, true),
+    [](QObject *sender_ptr) { DF() << "---"; },
+    [](QObject *sender_ptr) { DF() << "+++"; }), // 11
     //
-    State(State::OfonoConnectionManagerGetProperties, State::CallStarted),  // 12
-    State(State::OfonoConnectionManagerGetProperties, State::CallFinished), // 13
-    State(State::OfonoConnectionManagerGetContexts, State::CallStarted),    // 14
-    State(State::OfonoConnectionManagerGetContexts, State::CallFinished),   // 15
+    StateItem(
+    State(State::OfonoConnectionManagerGetProperties, State::CallStarted),
+    [](QObject *sender_ptr) { DF() << "---"; },
+    [](QObject *sender_ptr) { DF() << "+++"; }), // 12
+    StateItem(
+    State(State::OfonoConnectionManagerGetProperties, State::CallFinished),
+    [](QObject *sender_ptr) { DF() << "---"; },
+    [](QObject *sender_ptr) { DF() << "+++"; }), // 13
+    StateItem(
+    State(State::OfonoConnectionManagerGetContexts, State::CallStarted),
+    [](QObject *sender_ptr) { DF(); },
+    [](QObject *sender_ptr) { DF(); }), // 14
+    StateItem(
+    State(State::OfonoConnectionManagerGetContexts, State::CallFinished),
+    [](QObject *sender_ptr) { DF(); },
+    [](QObject *sender_ptr) { DF(); }), // 15
     //
-    State(State::OfonoConnectionManagerRemoveContext, State::Status::CallStarted),  // 16
-    State(State::OfonoConnectionManagerRemoveContext, State::Status::CallFinished), // 17
-    State(State::OfonoConnectionManagerContextRemoved, State::Status::Signal),      // 18
+    StateItem(
+    State(State::OfonoConnectionManagerRemoveContext, State::Status::CallStarted),
+    [](QObject *sender_ptr) { DF(); },
+    [](QObject *sender_ptr) { DF(); }), // 16
+    StateItem(
+    State(State::OfonoConnectionManagerRemoveContext, State::Status::CallFinished),
+    [](QObject *sender_ptr) { DF(); },
+    [](QObject *sender_ptr) { DF(); }), // 17
+    StateItem(
+    State(State::OfonoConnectionManagerContextRemoved, State::Status::Signal),
+    [](QObject *sender_ptr) { DF(); },
+    [](QObject *sender_ptr) { DF(); }), // 18
     //
-    State(State::OfonoConnectionManagerAddContext, State::Status::CallStarted),  // 19
-    State(State::OfonoConnectionManagerAddContext, State::Status::CallFinished), // 20
+    StateItem(
+    State(State::OfonoConnectionManagerAddContext, State::Status::CallStarted),
+    [](QObject *sender_ptr) { DF(); },
+    [](QObject *sender_ptr) { DF(); }), // 19
+    StateItem(
+    State(State::OfonoConnectionManagerAddContext, State::Status::CallFinished),
+    [](QObject *sender_ptr) { DF(); },
+    [](QObject *sender_ptr) { DF(); }), // 20
 
-    State(State::OfonoConnectionContextGetProperties, State::CallStarted),  // 21
-    State(State::OfonoConnectionContextGetProperties, State::CallFinished), // 22
+    StateItem(
+    State(State::OfonoConnectionContextGetProperties, State::CallStarted),
+    [](QObject *sender_ptr) { DF(); },
+    [](QObject *sender_ptr) { DF(); }), // 21
+    StateItem(
+    State(State::OfonoConnectionContextGetProperties, State::CallFinished),
+    [](QObject *sender_ptr) { DF(); },
+    [](QObject *sender_ptr) { DF(); }), // 22
     //
-    State(State::OfonoModemOnline, State::CallStarted, true), // 23
-    State(State::OfonoModemOnline, State::CallFinished),      // 24
-    State(State::OfonoModemOnline, State::Signal, true)       // 25
+    StateItem(
+    State(State::OfonoModemOnline, State::CallStarted, true),
+    [](QObject *sender_ptr) { DF(); },
+    [](QObject *sender_ptr) { DF(); }), // 23
+    StateItem(
+    State(State::OfonoModemOnline, State::CallFinished),
+    [](QObject *sender_ptr) { DF(); },
+    [](QObject *sender_ptr) { DF(); }), // 24
+    StateItem(
+    State(State::OfonoModemOnline, State::Signal, true),
+    [](QObject *sender_ptr) { DF(); },
+    [](QObject *sender_ptr) { DF(); }) // 25*/
   },
   _stateCurrent(_statesTodo.begin())
 {
@@ -44,8 +142,6 @@ Automator::Automator(QObject *parent)
 
 void Automator::stateChangedHandler(QObject *sender_ptr, const State &nextState)
 {
-  //  DF() << sender_ptr << nextState;
-
   if (State::CallError == nextState.status())
   {
     throw astr_global::Exception(nextState.error().message());
@@ -53,14 +149,28 @@ void Automator::stateChangedHandler(QObject *sender_ptr, const State &nextState)
 
   if ((_stateCurrent + 1)->operator!=(nextState))
   {
-//    DF() << " --- " << nextState;
+    //    DF() << " --- " << nextState;
     return;
   }
 
-  _setState(std::move(_stateCurrent + 1), sender_ptr);
+  ++_stateCurrent;
+  DF() << _stateCurrent->_state;
+
+  next(_stateCurrent + 1, sender_ptr);
 }
 
-void Automator::_setState(const QVector<State>::const_iterator &stateNew, QObject* sender_ptr)
+Automator::StateItem::StateItem(const State &state, Automator::Function prev, Automator::Function next)
+: _state(state), _prev(prev), _next(next)
 {
-    DF()<<"+++"<<_stateCurrent<<stateNew<<sender_ptr;
+  //  DF() << _state;
+}
+
+bool Automator::StateItem::operator==(const State &state) const
+{
+  return _state == state;
+}
+
+bool Automator::StateItem::operator!=(const State &state) const
+{
+  return _state != state;
 }
