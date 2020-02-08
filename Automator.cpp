@@ -39,10 +39,28 @@ Automator::Automator(QObject *parent)
   },
   _stateCurrent(_statesTodo.begin())
 {
-    DF();
+  DF();
 }
 
 void Automator::stateChangedHandler(QObject *sender_ptr, const State &nextState)
 {
-    DF()<<sender_ptr<<nextState;
+  //  DF() << sender_ptr << nextState;
+
+  if (State::CallError == nextState.status())
+  {
+    throw astr_global::Exception(nextState.error().message());
+  }
+
+  if ((_stateCurrent + 1)->operator!=(nextState))
+  {
+//    DF() << " --- " << nextState;
+    return;
+  }
+
+  _setState(std::move(_stateCurrent + 1), sender_ptr);
+}
+
+void Automator::_setState(const QVector<State>::const_iterator &stateNew, QObject* sender_ptr)
+{
+    DF()<<"+++"<<_stateCurrent<<stateNew<<sender_ptr;
 }
