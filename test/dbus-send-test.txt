@@ -1,3 +1,5 @@
+dbus-send --dest=org.ofono phonesim org.ofono.Modem.SetProperty string:'Lockdown' booll:false
+
 dbus-send --system --type=method_call --print-reply --dest=com.meego.usb_moded /com/meego/usb_moded com.meego.usb_moded.mode_request
 dbus-send --system --type=method_call --print-reply --dest=com.meego.usb_moded /com/meego/usb_moded com.meego.usb_moded.set_mode string:'ovi_suite'
 dbus-send --system --type=method_call --print-reply --dest=com.meego.usb_moded /com/meego/usb_moded com.meego.usb_moded.set_config string:'ovi_suite'

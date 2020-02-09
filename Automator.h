@@ -37,8 +37,12 @@ private:
     bool operator==(const State &state) const;
     bool operator!=(const State &state) const;
   };
-  const QVector<Automator::Item> _automatorStates;
-  Item::Iterator _stateIterator;
+  const QVector<Automator::Item> _scriptInitializationModem;
+  const QVector<Automator::Item> _scriptInitializationSimManager;
+  const QVector<Automator::Item> _scriptInitializationNetworkRegistration;
+  const QVector<Automator::Item> _scriptInitializationConnectionManager;
+  const QVector<Automator::Item> _scriptInitializationConnectionContext;
+  Item::Iterator _scriptIterator;
   Data _data;
 };
 
