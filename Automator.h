@@ -14,25 +14,31 @@ public:
 private:
   struct Data
   {
-      QVariant modemLockdown;
-      QVariant modemPowered;
-      QVariant modemOnline;
-      Data()=default;
-      void update(const State &state);
+    QVariant modemLockdown;
+    QVariant modemPowered;
+    QVariant modemOnline;
+    Data() = default;
+    void update(const State &state);
   };
 
   struct Item
   {
-    typedef void (*StateItemCommand)(QObject *sender, const Automator::Data& data);
+    typedef QVector<Automator::Item>::const_iterator Iterator;
+    typedef void (*StateItemCommand)(Iterator &iterator, QObject *sender, const Automator::Data &data);
     State state;
     StateItemCommand command;
-    Item(const State &_state, StateItemCommand _command = nullptr);
+    Item(
+    const State &_state,
+    StateItemCommand _command = [](Automator::Item::Iterator &iterator, QObject *sender, const Automator::Data &data) {
+      Q_UNUSED(sender)
+      Q_UNUSED(data)
+      DF() << iterator->state;
+    });
     bool operator==(const State &state) const;
     bool operator!=(const State &state) const;
   };
   const QVector<Automator::Item> _automatorStates;
-  typedef QVector<Automator::Item>::const_iterator Iterator;
-  Iterator _stateIterator;
+  Item::Iterator _stateIterator;
   Data _data;
 };
 

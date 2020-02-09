@@ -8,9 +8,9 @@ Automator::Automator(QObject *parent)
     Item(State(State::OfonoManagerModemRemoved, State::Signal)),     // 0
     Item(State(State::OfonoModemGetProperties, State::CallStarted)), // 1
     Item(State(State::OfonoModemGetProperties, State::CallFinished),
-         [](QObject *sender, const Automator::Data &data) {
-           DF() << "+++ State::OfonoModemGetProperties, State::CallFinished" << sender
-                << data.modemLockdown << data.modemPowered << data.modemOnline;
+         [](Automator::Item::Iterator &iterator, QObject *sender, const Automator::Data &data) {
+           DF() << "+++ " << iterator->state << sender << data.modemLockdown << data.modemPowered
+                << data.modemOnline;
            static_cast<Modem *>(sender)->call(State::OfonoModemLockdown, !data.modemLockdown.toBool());
          }),                                                           // 2
     Item(State(State::OfonoModemLockdown, State::CallStarted, true)),  // 3
@@ -56,14 +56,10 @@ void Automator::stateChangedHandler(QObject *sender_ptr, const State &state)
 
   _data.update(state);
 
-  QVector<Item>::const_iterator stateIterator = _stateIterator + 1;
+  Item::Iterator stateIterator = (_stateIterator + 1);
   if (stateIterator->operator!=(state)) return;
-
   _stateIterator = stateIterator;
-  if (_stateIterator->command)
-  {
-    _stateIterator->command(sender_ptr, _data);
-  }
+  _stateIterator->command(_stateIterator, sender_ptr, _data);
 }
 
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
