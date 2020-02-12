@@ -21,23 +21,29 @@ Scripts::Basic::Basic(const QVector<Scripts::Item> &script, QObject *parent)
 
 void Scripts::Basic::processing(QObject *sender, const State &state, const Scripts::Data &data)
 {
-  if (isEnd())
-    return;
+  if (_iterator == _script.cend() || _iterator + 1 == _script.cend())
+  {
+     DF("end iterator");
+     throw 1;
+  }
 
   const Scripts::Item::Iterator iterator = _iterator + 1;
   if (State::CallError == state.status() &&
       State(iterator->state.type(), state.status(), iterator->state.value(), state.error()) == state)
   {
+    _status = Error;
     Q_EMIT StatusChanged(Error);
-    reset();
     return;
   }
 
   if (iterator->state != state)
     return;
 
-  if (isBegin())
+  if (_iterator == _script.cbegin())
+  {
+    _status = Started;
     Q_EMIT StatusChanged(Started);
+  }
 
   ++_iterator;
   if (_iterator->command)
@@ -45,24 +51,15 @@ void Scripts::Basic::processing(QObject *sender, const State &state, const Scrip
 
   DF() << _iterator->state;
 
-  if (isEnd())
+  if (_iterator + 1 == _script.cend())
   {
+    _status = Finished;
     Q_EMIT StatusChanged(Finished);
-    reset();
   }
 }
 
 void Scripts::Basic::reset()
 {
+  _status = NotStarted;
   _iterator = _script.cbegin();
-}
-
-bool Scripts::Basic::isEnd() const
-{
-  return (_iterator == _script.cend() || _iterator + 1 == _script.cend());
-}
-
-bool Scripts::Basic::isBegin() const
-{
-  return _iterator == _script.cbegin();
 }
