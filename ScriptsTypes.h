@@ -40,7 +40,7 @@ class Basic : public QObject
 public:
   enum Status
   {
-    _EMPTYSTATUS_ = 0,
+    NotStarted = 0,
     Started,
     Finished,
     Error
@@ -49,15 +49,18 @@ public:
 public:
   Basic(const QVector<Item> &script, QObject *parent = nullptr);
   ~Basic() = default;
-  void reset();
-  bool isEnd() const;
-  bool isBegin() const;
+  Status status() const {return _status;}
   void processing(QObject *sender, const State &state, const Scripts::Data &data);
 
 Q_SIGNALS:
   void StatusChanged(const Scripts::Basic::Status status);
 
 private:
+  void reset();
+  bool isEnd() const;
+  bool isBegin() const;
+
+  Status _status = NotStarted;
   const QVector<Item> _script;
   Item::Iterator _iterator;
 };
