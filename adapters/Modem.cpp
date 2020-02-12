@@ -163,6 +163,6 @@ QList<State::Type> Modem::_modemInterfacesChanged(const QStringList &interfaces)
                                     : State::OfonoModemInterfaceConnectionManagerRemoved);
   }
   _modemInterfaces = interfaces;
-  DF() << _modemInterfaces << typeListChanges;
+  //  DF() << _modemInterfaces << typeListChanges;
   return typeListChanges;
 }

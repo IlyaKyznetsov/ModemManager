@@ -1,50 +1,34 @@
 #ifndef AUTOMATOR_H
 #define AUTOMATOR_H
 
-#include "types.h"
+#include "ModemManagerData.h"
+#include "ScriptsTypes.h"
 #include <QObject>
 
 class Automator : public QObject
 {
   Q_OBJECT
 public:
-  explicit Automator(QObject *parent = nullptr);
-  void stateChangedHandler(QObject *sender_ptr, const State &state);
+  explicit Automator(const ModemManagerData::Settings &settings, QObject *parent = nullptr);
+
+public:
+  void processing(QObject *sender, const State &state);
+  void run(QObject *adapter, const State::Type type, const QVariant &value);
+
+private Q_SLOTS:
+  void onStatusChanged(const Scripts::Basic::Status status);
 
 private:
-  struct Data
-  {
-    QVariant modemLockdown;
-    QVariant modemPowered;
-    QVariant modemOnline;
-    Data() = default;
-    void update(const State &state);
-  };
-
-  struct Item
-  {
-    typedef QVector<Automator::Item>::const_iterator Iterator;
-    typedef void (*StateItemCommand)(Iterator &iterator, QObject *sender, const Automator::Data &data);
-    State state;
-    StateItemCommand command;
-    Item(
-    const State &_state,
-    StateItemCommand _command = [](Automator::Item::Iterator &iterator, QObject *sender, const Automator::Data &data) {
-      Q_UNUSED(sender)
-      Q_UNUSED(data)
-      DF() << iterator->state;
-    });
-    bool operator==(const State &state) const;
-    bool operator!=(const State &state) const;
-  };
-  const QVector<Automator::Item> _scriptInitializationModem;
-  const QVector<Automator::Item> _scriptInitializationSimManager;
-  const QVector<Automator::Item> _scriptInitializationNetworkRegistration;
-  const QVector<Automator::Item> _scriptInitializationConnectionManager;
-  const QVector<Automator::Item> _scriptInitializationConnectionContext;
-  const QVector<Automator::Item> _scriptAutoConnection;
-  Item::Iterator _scriptIterator;
-  Data _data;
+  const ModemManagerData::Settings &_settings;
+  Scripts::Basic _managerModemRemoved;
+  Scripts::Basic _managerModemAdded;
+  Scripts::Basic _modemLockdownDisable;
+  Scripts::Basic _modemLockdownEnable;
+  Scripts::Basic _modemPoweredDisable;
+  Scripts::Basic _modemPoweredEnable;
+  Scripts::Basic _modemOnlineDisable;
+  Scripts::Basic _modemOnlineEnable;
+  Scripts::Data _data;
 };
 
 #endif // AUTOMATOR_H

@@ -1,9 +1,10 @@
 #ifndef MODEMMANAGER_H
 #define MODEMMANAGER_H
 
-#include "DeferredCall.h"
+//#include "DeferredCall.h"
 #include "ModemManagerData.h"
-#include "types.h"
+//#include "scripts/ScriptsTypes.h"
+//#include "types.h"
 #include <QObject>
 
 class OfonoManager;
@@ -14,6 +15,7 @@ class NetworkRegistration;
 class ConnectionManager;
 class ConnectionContext;
 class Automator;
+class State;
 
 class ModemManager : public QObject
 {
@@ -27,7 +29,6 @@ Q_SIGNALS:
 
 private Q_SLOTS:
   void onStateChanged(const State &state);
-  void onDeferredCall(State::Type type, const QVariant &value);
 
 private:
   const ModemManagerData::Settings _settings;
@@ -41,8 +42,7 @@ private:
   //  DeferredCall *_deferredCall;
   ModemManagerData::OfonoState _ofonoState;
 
-  Automator* _automator;
-
+  Automator *_automator;
   void _signalOfonoManager(const State &state);
   void _signalManager(const State &state);
   void _signalModem(const State &state);
@@ -51,8 +51,59 @@ private:
   void _signalConnectionManager(const State &state);
   void _signalConnectionContext(const State &state);
 
-  void _autoStateChangedHandler(const State &state);
+  //  void _automationHandler(QObject *sender_ptr, const State &state);
+  /*
+    struct AutomatorData
+    {
+      QVariant modemLockdown;
+      QVariant modemPowered;
+      QVariant modemOnline;
+      QVariant simManagerCardIdentifier;
+      QVariant simManagerServiceProviderName;
+      QVariant networkRegistrationStatus;
+      QVariant connectionContextAccessPointName;
+      QVariant connectionContextUsername;
+      QVariant connectionContextPassword;
+      QVariant connectionManagerAttached;
+      QVariant connectionManagerPowered;
+      QVariant connectionContextActive;
 
+      ModemManagerData::Settings::Provider provider;
+      AutomatorData() = default;
+    };
+
+    struct AutomatorItem
+    {
+      typedef QVector<ModemManager::AutomatorItem>::const_iterator Iterator;
+      typedef void (*StateItemCommand)(Iterator &iterator, QObject *sender, const ModemManager::AutomatorData &data);
+      State state;
+      StateItemCommand command;
+      AutomatorItem(
+          const State &_state,
+  #ifdef QT_DEBUG
+          StateItemCommand _command =
+              [](ModemManager::AutomatorItem::Iterator &iterator, QObject *sender,
+                 const ModemManager::AutomatorData &data) {
+                Q_UNUSED(sender)
+                Q_UNUSED(data)
+                DF() << iterator->state;
+              }
+  #else
+          StateItemCommand _command = nullptr
+  #endif
+      );
+      bool operator==(const State &state) const;
+      bool operator!=(const State &state) const;
+    };
+
+    const QVector<ModemManager::AutomatorItem> _automatorScriptInitialization;
+    AutomatorItem::Iterator _automatorInitializationIterator;
+    const QVector<ModemManager::AutomatorItem> _automatorScriptInitializationConnectionContext;
+    AutomatorItem::Iterator _automatorConnectionContextIterator;
+    const QVector<ModemManager::AutomatorItem> _automatorScriptAutoconnection;
+    AutomatorItem::Iterator _automatorAutoconnectionIterator;
+    AutomatorData _automatorData;
+  */
 private Q_SLOTS:
   void debugOfonoState(const ModemManagerData::OfonoState &state);
 

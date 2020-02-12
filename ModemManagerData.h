@@ -43,7 +43,7 @@ struct Settings
   };
   Settings(const Settings::DBusTimeouts &DBusTimeouts, const Settings::ModemManagerTimeouts &ModemManagerTimeouts);
   bool addProvider(const QString &name, const Settings::Provider &settings);
-  Provider providerSettings(const QString &provider);
+  Provider providerSettings(const QString &provider) const;
   void debug() const;
 
   const DBusTimeouts dBusTimeouts;

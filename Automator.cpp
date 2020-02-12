@@ -1,129 +1,201 @@
 #include "Automator.h"
-#include "Global.h"
+#include "ScriptsTypes.h"
 #include "adapters/Modem.h"
 
-Automator::Automator(QObject *parent)
-: QObject(parent),
-  _scriptInitializationModem{
-    Item(State(State::OfonoManagerModemRemoved, State::Signal)),     // 0
-    Item(State(State::OfonoModemGetProperties, State::CallStarted)), // 1
-    Item(State(State::OfonoModemGetProperties, State::CallFinished),
-         [](Automator::Item::Iterator &iterator, QObject *sender, const Automator::Data &data) {
-           DF() << "+++ " << iterator->state << sender << data.modemLockdown << data.modemPowered
-                << data.modemOnline;
-           Modem *modem = static_cast<Modem *>(sender);
-           if (!data.modemLockdown.toBool())
-             modem->call(State::OfonoModemLockdown, true);
-           else
-             throw astr_global::Exception("State::OfonoModemLockdown is true");
-         }),                                                          // 2
-    Item(State(State::OfonoModemLockdown, State::CallStarted, true)), // 3
-    Item(State(State::OfonoModemLockdown, State::CallFinished)),      // 4
-    Item(State(State::OfonoModemLockdown, State::Signal, true),
-         [](Automator::Item::Iterator &iterator, QObject *sender, const Automator::Data &data) {
-           DF() << "+++ " << iterator->state << sender << data.modemLockdown << data.modemPowered
-                << data.modemOnline;
-           Modem *modem = static_cast<Modem *>(sender);
-           if (data.modemLockdown.toBool())
-             modem->call(State::OfonoModemLockdown, false);
-           else
-             throw astr_global::Exception("State::OfonoModemLockdown is false");
-         }),                                                           // 5
-    Item(State(State::OfonoModemLockdown, State::CallStarted, false)), // 6
-    Item(State(State::OfonoModemLockdown, State::CallFinished)),       // 7
-    Item(State(State::OfonoModemLockdown, State::Signal, false),
-         [](Automator::Item::Iterator &iterator, QObject *sender, const Automator::Data &data) {
-           DF() << "+++ " << iterator->state << sender << data.modemLockdown << data.modemPowered
-                << data.modemOnline;
-           Modem *modem = static_cast<Modem *>(sender);
-           if (!data.modemPowered.toBool())
-             modem->call(State::OfonoModemPowered, true);
-           else
-             throw astr_global::Exception("State::OfonoModemPowered is true");
-         }),                                                         // 8
-    Item(State(State::OfonoModemPowered, State::CallStarted, true)), // 9
-    Item(State(State::OfonoModemPowered, State::CallFinished)),      // 10
-    Item(State(State::OfonoModemPowered, State::Signal, true),
-         [](Automator::Item::Iterator &iterator, QObject *sender, const Automator::Data &data) {
-           DF() << "+++ " << iterator->state << sender << data.modemLockdown << data.modemPowered
-                << data.modemOnline;
-           Modem *modem = static_cast<Modem *>(sender);
-           if (!data.modemOnline.toBool())
-             modem->call(State::OfonoModemOnline, true);
-           else
-             throw astr_global::Exception("State::OfonoModemOnline is true");
-         }), // 11
-
-    Item(State(State::OfonoModemOnline, State::CallStarted, true)), // 23
-    Item(State(State::OfonoModemOnline, State::CallFinished)),      // 24
-    Item(State(State::OfonoModemOnline, State::Signal, true))       // 25
-  },
-  _scriptIterator(_scriptInitializationModem.begin())
+Automator::Automator(const ModemManagerData::Settings &settings, QObject *parent)
+    : QObject(parent),
+      _settings(settings),
+      _managerModemRemoved({Scripts::Item(State(State::_EMPTYTYPE_, State::_EMPTYSTATUS_)),
+                            Scripts::Item(State(State::OfonoManagerModemRemoved, State::Signal))},
+                           this),
+      _managerModemAdded({Scripts::Item(State(State::_EMPTYTYPE_, State::_EMPTYSTATUS_)),
+                          Scripts::Item(State(State::OfonoModemGetProperties, State::CallStarted)),
+                          Scripts::Item(State(State::OfonoManagerModemAdded, State::Signal)),
+                          Scripts::Item(State(State::OfonoModemGetProperties, State::CallFinished))},
+                         this),
+      _modemLockdownDisable({Scripts::Item(State(State::_EMPTYTYPE_, State::_EMPTYSTATUS_)),
+                             Scripts::Item(State(State::OfonoModemLockdown, State::CallStarted, false)),
+                             Scripts::Item(State(State::OfonoModemLockdown, State::CallFinished)),
+                             Scripts::Item(State(State::OfonoModemLockdown, State::Signal, false))},
+                            this),
+      _modemLockdownEnable({Scripts::Item(State(State::_EMPTYTYPE_, State::_EMPTYSTATUS_)),
+                            Scripts::Item(State(State::OfonoModemLockdown, State::CallStarted, true)),
+                            Scripts::Item(State(State::OfonoModemLockdown, State::CallFinished)),
+                            Scripts::Item(State(State::OfonoModemLockdown, State::Signal, true))},
+                           this),
+      _modemPoweredDisable({Scripts::Item(State(State::_EMPTYTYPE_, State::_EMPTYSTATUS_)),
+                            Scripts::Item(State(State::OfonoModemPowered, State::CallStarted, false)),
+                            Scripts::Item(State(State::OfonoModemPowered, State::CallFinished)),
+                            Scripts::Item(State(State::OfonoModemPowered, State::Signal, false))},
+                           this),
+      _modemPoweredEnable({Scripts::Item(State(State::_EMPTYTYPE_, State::_EMPTYSTATUS_)),
+                           Scripts::Item(State(State::OfonoModemPowered, State::CallStarted, true)),
+                           Scripts::Item(State(State::OfonoModemPowered, State::CallFinished)),
+                           Scripts::Item(State(State::OfonoModemPowered, State::Signal, true))},
+                          this),
+      _modemOnlineDisable({Scripts::Item(State(State::_EMPTYTYPE_, State::_EMPTYSTATUS_)),
+                           Scripts::Item(State(State::OfonoModemOnline, State::CallStarted, false)),
+                           Scripts::Item(State(State::OfonoModemOnline, State::CallFinished)),
+                           Scripts::Item(State(State::OfonoModemOnline, State::Signal, false))},
+                          this),
+      _modemOnlineEnable({Scripts::Item(State(State::_EMPTYTYPE_, State::_EMPTYSTATUS_)),
+                          Scripts::Item(State(State::OfonoModemOnline, State::CallStarted, true)),
+                          Scripts::Item(State(State::OfonoModemOnline, State::CallFinished)),
+                          Scripts::Item(State(State::OfonoModemOnline, State::Signal, true))},
+                         this)
 {
-  DF();
+  connect(&_managerModemRemoved, &Scripts::Basic::StatusChanged, this, &Automator::onStatusChanged);
+  connect(&_managerModemAdded, &Scripts::Basic::StatusChanged, this, &Automator::onStatusChanged);
+  connect(&_modemLockdownDisable, &Scripts::Basic::StatusChanged, this, &Automator::onStatusChanged);
+  connect(&_modemLockdownEnable, &Scripts::Basic::StatusChanged, this, &Automator::onStatusChanged);
+  connect(&_modemPoweredDisable, &Scripts::Basic::StatusChanged, this, &Automator::onStatusChanged);
+  connect(&_modemPoweredEnable, &Scripts::Basic::StatusChanged, this, &Automator::onStatusChanged);
+  connect(&_modemOnlineDisable, &Scripts::Basic::StatusChanged, this, &Automator::onStatusChanged);
+  connect(&_modemOnlineEnable, &Scripts::Basic::StatusChanged, this, &Automator::onStatusChanged);
 }
 
-void Automator::stateChangedHandler(QObject *sender_ptr, const State &state)
+void Automator::processing(QObject *sender, const State &state)
 {
-  if (State::CallError == state.status())
+
+  if (State::Signal == state.status())
   {
-    throw astr_global::Exception(state.error().message());
+    switch (state.type())
+    {
+        /*
+          case State::OfonoManagerModemRemoved:
+          {
+            _automatorInitializationIterator = _automatorScriptInitialization.begin();
+            _automatorConnectionContextIterator = _automatorScriptInitializationConnectionContext.begin();
+            _data.modemLockdown.clear();
+            _data.modemPowered.clear();
+            _data.modemOnline.clear();
+            _data.simManagerCardIdentifier.clear();
+            _data.simManagerServiceProviderName.clear();
+            _data.networkRegistrationStatus.clear();
+            _data.connectionContextAccessPointName.clear();
+            _data.connectionContextUsername.clear();
+            _data.connectionContextPassword.clear();
+          }
+          break;
+          case State::OfonoModemInterfaceSimManagerRemoved:
+          {
+            _data.simManagerCardIdentifier.clear();
+            _data.simManagerServiceProviderName.clear();
+          }
+          break;
+          case State::OfonoModemInterfaceNetworkRegistrationRemoved:
+          {
+            _data.networkRegistrationStatus.clear();
+          }
+          break;
+          case State::OfonoModemInterfaceConnectionManagerRemoved:
+          {
+            _automatorConnectionContextIterator = _automatorScriptInitializationConnectionContext.begin();
+            _data.connectionContextAccessPointName.clear();
+            _data.connectionContextUsername.clear();
+            _data.connectionContextPassword.clear();
+            _data.connectionManagerAttached.clear();
+            _data.connectionManagerPowered.clear();
+            _data.connectionContextActive.clear();
+          }
+          break;
+          */
+      case State::OfonoModemPowered:
+      {
+        _data.modemPowered = state.value();
+      }
+      break;
+      case State::OfonoModemOnline:
+      {
+        _data.modemOnline = state.value();
+      }
+      break;
+      case State::OfonoModemLockdown:
+      {
+        _data.modemLockdown = state.value();
+      }
+      break;
+      case State::OfonoSimManagerCardIdentifier:
+      {
+        _data.simManagerCardIdentifier = state.value();
+      }
+      break;
+      case State::OfonoSimManagerServiceProviderName:
+      {
+        _data.simManagerServiceProviderName = state.value();
+        //        _data.provider = _settings.providerSettings(_data.simManagerServiceProviderName.toString());
+        //        D("---PROVIDER---:" << _data.provider.accessPointName << _data.provider.username
+        //                            << _data.provider.password);
+      }
+      break;
+      case State::OfonoNetworkRegistrationStatus:
+      {
+        _data.networkRegistrationStatus = state.value();
+      }
+      break;
+
+      case State::OfonoConnectionContextAccessPointName:
+      {
+        _data.connectionContextAccessPointName = state.value();
+      }
+      break;
+      case State::OfonoConnectionContextUsername:
+      {
+        _data.connectionContextUsername = state.value();
+      }
+      break;
+      case State::OfonoConnectionContextPassword:
+      {
+        _data.connectionContextPassword = state.value();
+      }
+      break;
+
+      case State::OfonoConnectionManagerAttached:
+      {
+        _data.connectionManagerAttached = state.value();
+      }
+      break;
+      case State::OfonoConnectionManagerPowered:
+      {
+        _data.connectionManagerPowered = state.value();
+      }
+      break;
+      case State::OfonoConnectionContextActive:
+      {
+        _data.connectionContextActive = state.value();
+      }
+      break;
+
+      default: break;
+    }
   }
 
-  _data.update(state);
-
-  Item::Iterator stateIterator = (_scriptIterator + 1);
-  if (stateIterator->operator!=(state)) return;
-  _scriptIterator = stateIterator;
-  _scriptIterator->command(_scriptIterator, sender_ptr, _data);
+  _managerModemRemoved.processing(sender, state, _data);
+  _managerModemAdded.processing(sender, state, _data);
+  _modemLockdownDisable.processing(sender, state, _data);
+  _modemLockdownEnable.processing(sender, state, _data);
+  _modemPoweredDisable.processing(sender, state, _data);
+  _modemPoweredEnable.processing(sender, state, _data);
+  _modemOnlineDisable.processing(sender, state, _data);
+  _modemOnlineEnable.processing(sender, state, _data);
 }
 
-// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-
-Automator::Item::Item(const State &_state, Automator::Item::StateItemCommand _command)
-: state(_state), command(_command)
+void Automator::run(QObject *adapter, const State::Type type, const QVariant &value)
 {
-}
-
-bool Automator::Item::operator==(const State &state) const
-{
-  return state == this->state;
-}
-
-bool Automator::Item::operator!=(const State &state) const
-{
-  return state != this->state;
-}
-
-void Automator::Data::update(const State &state)
-{
-  switch (state.status())
+  switch (type)
   {
-  case State::Signal:
+    case State::OfonoModemLockdown:
+    case State::OfonoModemPowered:
+    case State::OfonoModemOnline:
+    {
+      static_cast<Modem *>(adapter)->call(type, value.toBool());
+    }
     break;
-  default:
-    return;
+    default: break;
   }
+}
 
-  switch (state.type())
-  {
-  case State::OfonoModemPowered:
-  {
-    modemPowered = state.value();
-  }
-  break;
-  case State::OfonoModemOnline:
-  {
-    modemOnline = state.value();
-  }
-  break;
-  case State::OfonoModemLockdown:
-  {
-    modemLockdown = state.value();
-  }
-  break;
-
-  default:
-    return;
-  }
+void Automator::onStatusChanged(const Scripts::Basic::Status status)
+{
+  DF() << sender() << status;
 }

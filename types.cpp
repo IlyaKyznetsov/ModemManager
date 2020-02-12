@@ -111,7 +111,7 @@ State::operator QString() const
       {Type::OfonoConnectionManagerPowered, "OfonoConnectionManagerPowered"},
       {Type::OfonoConnectionContextGetProperties, "OfonoConnectionContextGetProperties"},
       {Type::OfonoConnectionContextActive, "OfonoConnectionContextActive"},
-      {Type::OfonoConnectionContextSettings, "Type::OfonoConnectionContextSettings"},
+      {Type::OfonoConnectionContextSettings, "OfonoConnectionContextSettings"},
       {Type::OfonoConnectionContextAccessPointName, "OfonoConnectionContextAccessPointName"},
       {Type::OfonoConnectionContextUsername, "OfonoConnectionContextUsername"},
       {Type::OfonoConnectionContextPassword, "OfonoConnectionContextPassword"},
@@ -122,7 +122,8 @@ State::operator QString() const
       {Type::OfonoConnectionContextInterface, "OfonoConnectionContextInterface"},
       {Type::OfonoConnectionContextMethod, "OfonoConnectionContextMethod"},
       {Type::OfonoConnectionContextAddress, "OfonoConnectionContextAddress"},
-      {Type::OfonoConnectionContextNetmask, "OfonoConnectionContextNetmask"}};
+      {Type::OfonoConnectionContextNetmask, "OfonoConnectionContextNetmask"},
+  };
 
   QString type = types.value(_type);
   if (type.isEmpty())

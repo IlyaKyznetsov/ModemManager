@@ -13,8 +13,10 @@
 	},
 	"Providers":
 	{
-        "AccessPointName":"beeline.ru",
-        "Username":"beeline",
-        "Password":"beeline"
+        "Beeline":{
+            "AccessPointName":"beeline.ru",
+            "Username":"beeline",
+            "Password":"beeline"
+            }
 	}
  }

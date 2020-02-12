@@ -35,7 +35,7 @@ bool ModemManagerData::Settings::addProvider(const QString &name, const ModemMan
   return providers.insert(name, settings) != providers.end();
 }
 
-ModemManagerData::Settings::Provider ModemManagerData::Settings::providerSettings(const QString &provider)
+ModemManagerData::Settings::Provider ModemManagerData::Settings::providerSettings(const QString &provider) const
 {
   return providers.value(provider, Provider(QString(), QString(), QString()));
 }

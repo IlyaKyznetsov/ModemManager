@@ -1,7 +1,6 @@
 #include "ModemManager.h"
 #include "Global.h"
 
-#include "Automator.h"
 #include "adapters/ConnectionContext.h"
 #include "adapters/ConnectionManager.h"
 #include "adapters/Manager.h"
@@ -10,19 +9,21 @@
 #include "adapters/OfonoManager.h"
 #include "adapters/SimManager.h"
 
+#include "Automator.h"
+
 ModemManager::ModemManager(const ModemManagerData::Settings &settings, QObject *parent)
-: QObject(parent), _settings(settings), _ofonoManager(new OfonoManager(this)),
-  _manager(new Manager(_settings.dBusTimeouts.manager, this)),
-  _modem(new Modem(_settings.dBusTimeouts.modem, this)),
-  _simManager(new SimManager(_settings.dBusTimeouts.simManager, this)),
-  _networkRegistration(new NetworkRegistration(_settings.dBusTimeouts.networkRegistration, this)),
-  _connectionManager(new ConnectionManager(_settings.dBusTimeouts.connectionManager, this)),
-  _connectionContext(new ConnectionContext(_settings.dBusTimeouts.connectionContext, this)),
-  _automator(new Automator(this)) /*,
-    _deferredCall(new DeferredCall(_settings.modemManagerimeouts.deferredCall, this))*/
+    : QObject(parent),
+      _settings(settings),
+      _ofonoManager(new OfonoManager(this)),
+      _manager(new Manager(_settings.dBusTimeouts.manager, this)),
+      _modem(new Modem(_settings.dBusTimeouts.modem, this)),
+      _simManager(new SimManager(_settings.dBusTimeouts.simManager, this)),
+      _networkRegistration(new NetworkRegistration(_settings.dBusTimeouts.networkRegistration, this)),
+      _connectionManager(new ConnectionManager(_settings.dBusTimeouts.connectionManager, this)),
+      _connectionContext(new ConnectionContext(_settings.dBusTimeouts.connectionContext, this)),
+      _automator(new Automator(_settings, this))
 {
   DF();
-
   _settings.debug();
 
   //  connect(this, &ModemManager::OfonoStateChanged, this, &ModemManager::debugOfonoState);
@@ -47,6 +48,9 @@ ModemManager::ModemManager(const ModemManagerData::Settings &settings, QObject *
 
 void ModemManager::onStateChanged(const State &state)
 {
+  static int n = 0;
+  //  D("--- STATE --- " << ++n << state);
+
   QObject *sender_ptr = sender();
 
   Q_EMIT StateChanged(state);
@@ -69,69 +73,79 @@ void ModemManager::onStateChanged(const State &state)
       _signalConnectionContext(state);
   }
 
-  _automator->stateChangedHandler(sender_ptr, state);
+  _automator->processing(sender_ptr, state);
+
+  //_automationHandler(sender_ptr, state);
+
+  if (State::CallError == state.status())
+  {
+    C(state.error().message());
+    //    throw 1;
+  }
 }
 
+/*
 void ModemManager::onDeferredCall(State::Type type, const QVariant &value)
 {
   DF() << type;
   switch (type)
   {
-  case State::OfonoModemLockdown:
-  case State::OfonoModemPowered:
-  case State::OfonoModemOnline:
-  {
-    if (_modem->isValid()) _modem->call(type, value);
-  }
-  break;
-  case State::State::OfonoNetworkRegistrationScan:
-  case State::State::OfonoNetworkRegistrationRegister:
-  case State::State::OfonoNetworkRegistrationDeregister:
-  case State::State::OfonoNetworkRegistrationGetOperators:
-  {
-    if (_networkRegistration->isValid()) _networkRegistration->call(type);
-  }
-  break;
-  case State::OfonoConnectionContextActive:
-  {
-    if (_connectionContext->isValid()) _connectionContext->call(type, value);
-  }
-  break;
-  default:
+    case State::OfonoModemLockdown:
+    case State::OfonoModemPowered:
+    case State::OfonoModemOnline:
+    {
+      if (_modem->isValid())
+        _modem->call(type, value);
+    }
     break;
+    case State::State::OfonoNetworkRegistrationScan:
+    case State::State::OfonoNetworkRegistrationRegister:
+    case State::State::OfonoNetworkRegistrationDeregister:
+    case State::State::OfonoNetworkRegistrationGetOperators:
+    {
+      if (_networkRegistration->isValid())
+        _networkRegistration->call(type);
+    }
+    break;
+    case State::OfonoConnectionContextActive:
+    {
+      if (_connectionContext->isValid())
+        _connectionContext->call(type, value);
+    }
+    break;
+    default: break;
   }
 }
-
+*/
 void ModemManager::_signalOfonoManager(const State &state)
 {
   // DF() << state;
   switch (state.type())
   {
-  case State::OfonoServiceRegistered:
-  {
-    _ofonoState.isOfonoConnected = true;
-    _manager->reset(Ofono::SERVICE);
-  }
-  break;
-  case State::OfonoServiceUnregistered:
-  {
-    _connectionContext->reset();
-    _connectionManager->reset();
-    _networkRegistration->reset();
-    _simManager->reset();
-    _modem->reset();
-    _manager->reset();
+    case State::OfonoServiceRegistered:
+    {
+      _ofonoState.isOfonoConnected = true;
+      _manager->reset(Ofono::SERVICE);
+    }
+    break;
+    case State::OfonoServiceUnregistered:
+    {
+      _connectionContext->reset();
+      _connectionManager->reset();
+      _networkRegistration->reset();
+      _simManager->reset();
+      _modem->reset();
+      _manager->reset();
 
-    _ofonoState.isOfonoConnected = false;
-    _ofonoState.connectionContext.reset();
-    _ofonoState.connectionManager.reset();
-    _ofonoState.networkRegistration.reset();
-    _ofonoState.simManager.reset();
-    _ofonoState.modem.reset();
-  }
-  break;
-  default:
-    return;
+      _ofonoState.isOfonoConnected = false;
+      _ofonoState.connectionContext.reset();
+      _ofonoState.connectionManager.reset();
+      _ofonoState.networkRegistration.reset();
+      _ofonoState.simManager.reset();
+      _ofonoState.modem.reset();
+    }
+    break;
+    default: return;
   }
   Q_EMIT OfonoStateChanged(_ofonoState);
 }
@@ -141,31 +155,31 @@ void ModemManager::_signalManager(const State &state)
   // DF() << state;
   switch (state.type())
   {
-  case State::OfonoManagerModemAdded:
-  {
-    _ofonoState.modem.reset(new ModemManagerData::OfonoState::Modem());
-    _modem->reset(state.value().toString());
-  }
-  break;
-  case State::OfonoManagerModemRemoved:
-  {
-    if (_modem->path() != state.value().toString()) return;
+    case State::OfonoManagerModemAdded:
+    {
+      _ofonoState.modem.reset(new ModemManagerData::OfonoState::Modem());
+      _modem->reset(state.value().toString());
+    }
+    break;
+    case State::OfonoManagerModemRemoved:
+    {
+      if (_modem->path() != state.value().toString())
+        return;
 
-    _connectionContext->reset();
-    _connectionManager->reset();
-    _networkRegistration->reset();
-    _simManager->reset();
-    _modem->reset();
+      _connectionContext->reset();
+      _connectionManager->reset();
+      _networkRegistration->reset();
+      _simManager->reset();
+      _modem->reset();
 
-    _ofonoState.connectionContext.reset();
-    _ofonoState.connectionManager.reset();
-    _ofonoState.networkRegistration.reset();
-    _ofonoState.simManager.reset();
-    _ofonoState.modem.reset();
-  }
-  break;
-  default:
-    return;
+      _ofonoState.connectionContext.reset();
+      _ofonoState.connectionManager.reset();
+      _ofonoState.networkRegistration.reset();
+      _ofonoState.simManager.reset();
+      _ofonoState.modem.reset();
+    }
+    break;
+    default: return;
   }
   Q_EMIT OfonoStateChanged(_ofonoState);
 }
@@ -178,76 +192,75 @@ void ModemManager::_signalModem(const State &state)
 
   switch (state.type())
   {
-  case State::OfonoModemPowered:
-  {
-    _ofonoState.modem->powered = state.value().toBool();
-  }
-  break;
-  case State::OfonoModemOnline:
-  {
-    _ofonoState.modem->online = state.value().toBool();
-  }
-  break;
-  case State::OfonoModemLockdown:
-  {
-    _ofonoState.modem->lockdown = state.value().toBool();
-  }
-  break;
-  case State::OfonoModemManufacturer:
-  {
-    _ofonoState.modem->manufacturer = state.value().toString();
-  }
-  break;
-  case State::OfonoModemModel:
-  {
-    _ofonoState.modem->model = state.value().toString();
-  }
-  break;
-  case State::OfonoModemSerial:
-  {
-    _ofonoState.modem->serial = state.value().toString();
-  }
-  break;
-  case State::OfonoModemInterfaceSimManagerAdded:
-  {
-    _ofonoState.simManager.reset(new ModemManagerData::OfonoState::SimManager());
-    _simManager->reset(_modem->path());
-  }
-  break;
-  case State::OfonoModemInterfaceSimManagerRemoved:
-  {
-    _simManager->reset();
-    _ofonoState.simManager.reset();
-  }
-  break;
-  case State::OfonoModemInterfaceNetworkRegistrationAdded:
-  {
-    _ofonoState.networkRegistration.reset(new ModemManagerData::OfonoState::NetworkRegistration());
-    _networkRegistration->reset(_modem->path());
-  }
-  break;
-  case State::OfonoModemInterfaceNetworkRegistrationRemoved:
-  {
-    _networkRegistration->reset();
-    _ofonoState.networkRegistration.reset();
-  }
-  break;
-  case State::OfonoModemInterfaceConnectionManagerAdded:
-  {
-    _ofonoState.connectionManager.reset(new ModemManagerData::OfonoState::ConnectionManager());
-    _connectionManager->reset(_modem->path());
-  }
-  break;
-  case State::OfonoModemInterfaceConnectionManagerRemoved:
-  {
-    _connectionContext->reset();
-    _connectionManager->reset();
-    _ofonoState.connectionContext.reset();
-    _ofonoState.connectionManager.reset();
-  }
-  break;
-  default:
-    return;
+    case State::OfonoModemPowered:
+    {
+      _ofonoState.modem->powered = state.value().toBool();
+    }
+    break;
+    case State::OfonoModemOnline:
+    {
+      _ofonoState.modem->online = state.value().toBool();
+    }
+    break;
+    case State::OfonoModemLockdown:
+    {
+      _ofonoState.modem->lockdown = state.value().toBool();
+    }
+    break;
+    case State::OfonoModemManufacturer:
+    {
+      _ofonoState.modem->manufacturer = state.value().toString();
+    }
+    break;
+    case State::OfonoModemModel:
+    {
+      _ofonoState.modem->model = state.value().toString();
+    }
+    break;
+    case State::OfonoModemSerial:
+    {
+      _ofonoState.modem->serial = state.value().toString();
+    }
+    break;
+    case State::OfonoModemInterfaceSimManagerAdded:
+    {
+      _ofonoState.simManager.reset(new ModemManagerData::OfonoState::SimManager());
+      _simManager->reset(_modem->path());
+    }
+    break;
+    case State::OfonoModemInterfaceSimManagerRemoved:
+    {
+      _simManager->reset();
+      _ofonoState.simManager.reset();
+    }
+    break;
+    case State::OfonoModemInterfaceNetworkRegistrationAdded:
+    {
+      _ofonoState.networkRegistration.reset(new ModemManagerData::OfonoState::NetworkRegistration());
+      _networkRegistration->reset(_modem->path());
+    }
+    break;
+    case State::OfonoModemInterfaceNetworkRegistrationRemoved:
+    {
+      _networkRegistration->reset();
+      _ofonoState.networkRegistration.reset();
+    }
+    break;
+    case State::OfonoModemInterfaceConnectionManagerAdded:
+    {
+      _ofonoState.connectionManager.reset(new ModemManagerData::OfonoState::ConnectionManager());
+      _connectionManager->reset(_modem->path());
+    }
+    break;
+    case State::OfonoModemInterfaceConnectionManagerRemoved:
+    {
+      _connectionContext->reset();
+      _connectionManager->reset();
+      _ofonoState.connectionContext.reset();
+      _ofonoState.connectionManager.reset();
+    }
+    break;
+    default: return;
   }
   Q_EMIT OfonoStateChanged(_ofonoState);
 }
@@ -259,18 +272,17 @@ void ModemManager::_signalSimManager(const State &state)
 
   switch (state.type())
   {
-  case State::OfonoSimManagerCardIdentifier:
-  {
-    _ofonoState.simManager->cardIdentifier = state.value().toString();
-  }
-  break;
-  case State::OfonoSimManagerServiceProviderName:
-  {
-    _ofonoState.simManager->serviceProviderName = state.value().toString();
-  }
-  break;
-  default:
-    return;
+    case State::OfonoSimManagerCardIdentifier:
+    {
+      _ofonoState.simManager->cardIdentifier = state.value().toString();
+    }
+    break;
+    case State::OfonoSimManagerServiceProviderName:
+    {
+      _ofonoState.simManager->serviceProviderName = state.value().toString();
+    }
+    break;
+    default: return;
   }
   Q_EMIT OfonoStateChanged(_ofonoState);
 }
@@ -283,23 +295,22 @@ void ModemManager::_signalNetworkRegistration(const State &state)
 
   switch (state.type())
   {
-  case State::OfonoNetworkRegistrationStatus:
-  {
-    _ofonoState.networkRegistration->status = state.value().toString();
-  }
-  break;
-  case State::OfonoNetworkRegistrationName:
-  {
-    _ofonoState.networkRegistration->name = state.value().toString();
-  }
-  break;
-  case State::OfonoNetworkRegistrationStrength:
-  {
-    _ofonoState.networkRegistration->strength = state.value().toString();
-  }
-  break;
-  default:
-    return;
+    case State::OfonoNetworkRegistrationStatus:
+    {
+      _ofonoState.networkRegistration->status = state.value().toString();
+    }
+    break;
+    case State::OfonoNetworkRegistrationName:
+    {
+      _ofonoState.networkRegistration->name = state.value().toString();
+    }
+    break;
+    case State::OfonoNetworkRegistrationStrength:
+    {
+      _ofonoState.networkRegistration->strength = state.value().toString();
+    }
+    break;
+    default: return;
   }
   Q_EMIT OfonoStateChanged(_ofonoState);
 }
@@ -312,35 +323,34 @@ void ModemManager::_signalConnectionManager(const State &state)
 
   switch (state.type())
   {
-  case State::OfonoConnectionManagerPowered:
-  {
-    _ofonoState.connectionManager->powered = state.value().toBool();
-  }
-  break;
-  case State::OfonoConnectionManagerAttached:
-  {
-    _ofonoState.connectionManager->attached = state.value().toBool();
-  }
-  break;
-  case State::OfonoConnectionManagerRoamingAllowed:
-  {
-    _ofonoState.connectionManager->roamingAllowed = state.value().toBool();
-  }
-  break;
-  case State::OfonoConnectionManagerContextAdded:
-  {
-    _ofonoState.connectionContext.reset(new ModemManagerData::OfonoState::ConnectionContext());
-    _connectionContext->reset(_connectionManager->contextPath());
-  }
-  break;
-  case State::OfonoConnectionManagerContextRemoved:
-  {
-    _connectionContext->reset();
-    _ofonoState.connectionContext.reset();
-  }
-  break;
-  default:
-    return;
+    case State::OfonoConnectionManagerPowered:
+    {
+      _ofonoState.connectionManager->powered = state.value().toBool();
+    }
+    break;
+    case State::OfonoConnectionManagerAttached:
+    {
+      _ofonoState.connectionManager->attached = state.value().toBool();
+    }
+    break;
+    case State::OfonoConnectionManagerRoamingAllowed:
+    {
+      _ofonoState.connectionManager->roamingAllowed = state.value().toBool();
+    }
+    break;
+    case State::OfonoConnectionManagerContextAdded:
+    {
+      _ofonoState.connectionContext.reset(new ModemManagerData::OfonoState::ConnectionContext());
+      _connectionContext->reset(_connectionManager->contextPath());
+    }
+    break;
+    case State::OfonoConnectionManagerContextRemoved:
+    {
+      _connectionContext->reset();
+      _ofonoState.connectionContext.reset();
+    }
+    break;
+    default: return;
   }
   Q_EMIT OfonoStateChanged(_ofonoState);
 }
@@ -349,329 +359,278 @@ void ModemManager::_signalConnectionContext(const State &state)
 {
   switch (state.type())
   {
-  case State::OfonoConnectionContextActive:
-  {
-    _ofonoState.connectionContext->active = state.value().toBool();
-    if (!_ofonoState.connectionContext->active)
+    case State::OfonoConnectionContextActive:
     {
-      _ofonoState.connectionContext->interface.clear();
-      _ofonoState.connectionContext->method.clear();
-      _ofonoState.connectionContext->address.clear();
-      _ofonoState.connectionContext->netmask.clear();
+      _ofonoState.connectionContext->active = state.value().toBool();
+      if (!_ofonoState.connectionContext->active)
+      {
+        _ofonoState.connectionContext->interface.clear();
+        _ofonoState.connectionContext->method.clear();
+        _ofonoState.connectionContext->address.clear();
+        _ofonoState.connectionContext->netmask.clear();
+      }
     }
-  }
-  break;
-  case State::OfonoConnectionContextAccessPointName:
-  {
-    _ofonoState.connectionContext->accessPointName = state.value().toString();
-  }
-  break;
-  case State::OfonoConnectionContextUsername:
-  {
-    _ofonoState.connectionContext->username = state.value().toString();
-  }
-  break;
-  case State::OfonoConnectionContextPassword:
-  {
-    _ofonoState.connectionContext->password = state.value().toString();
-  }
-  break;
-  case State::OfonoConnectionContextType:
-  {
-    _ofonoState.connectionContext->type = state.value().toString();
-  }
-  break;
-  case State::OfonoConnectionContextAuthenticationMethod:
-  {
-    _ofonoState.connectionContext->authenticationMethod = state.value().toString();
-  }
-  break;
-  case State::OfonoConnectionContextProtocol:
-  {
-    _ofonoState.connectionContext->protocol = state.value().toString();
-  }
-  break;
-  case State::OfonoConnectionContextName:
-  {
-    _ofonoState.connectionContext->name = state.value().toString();
-  }
-  break;
-  case State::OfonoConnectionContextInterface:
-  {
-    _ofonoState.connectionContext->interface = state.value().toString();
-  }
-  break;
-  case State::OfonoConnectionContextMethod:
-  {
-    _ofonoState.connectionContext->method = state.value().toString();
-  }
-  break;
-  case State::OfonoConnectionContextAddress:
-  {
-    _ofonoState.connectionContext->address = state.value().toString();
-  }
-  break;
-  case State::OfonoConnectionContextNetmask:
-  {
-    _ofonoState.connectionContext->netmask = state.value().toString();
-  }
-  break;
-  default:
-    return;
+    break;
+    case State::OfonoConnectionContextAccessPointName:
+    {
+      _ofonoState.connectionContext->accessPointName = state.value().toString();
+    }
+    break;
+    case State::OfonoConnectionContextUsername:
+    {
+      _ofonoState.connectionContext->username = state.value().toString();
+    }
+    break;
+    case State::OfonoConnectionContextPassword:
+    {
+      _ofonoState.connectionContext->password = state.value().toString();
+    }
+    break;
+    case State::OfonoConnectionContextType:
+    {
+      _ofonoState.connectionContext->type = state.value().toString();
+    }
+    break;
+    case State::OfonoConnectionContextAuthenticationMethod:
+    {
+      _ofonoState.connectionContext->authenticationMethod = state.value().toString();
+    }
+    break;
+    case State::OfonoConnectionContextProtocol:
+    {
+      _ofonoState.connectionContext->protocol = state.value().toString();
+    }
+    break;
+    case State::OfonoConnectionContextName:
+    {
+      _ofonoState.connectionContext->name = state.value().toString();
+    }
+    break;
+    case State::OfonoConnectionContextInterface:
+    {
+      _ofonoState.connectionContext->interface = state.value().toString();
+    }
+    break;
+    case State::OfonoConnectionContextMethod:
+    {
+      _ofonoState.connectionContext->method = state.value().toString();
+    }
+    break;
+    case State::OfonoConnectionContextAddress:
+    {
+      _ofonoState.connectionContext->address = state.value().toString();
+    }
+    break;
+    case State::OfonoConnectionContextNetmask:
+    {
+      _ofonoState.connectionContext->netmask = state.value().toString();
+    }
+    break;
+    default: return;
   }
   Q_EMIT OfonoStateChanged(_ofonoState);
 }
-
-void ModemManager::_autoStateChangedHandler(const State &state)
+/*
+void ModemManager::_automationHandler(QObject *sender_ptr, const State &state)
 {
-    /*
-  if (state.type() == State::OfonoManagerModemRemoved)
+  if (_automatorInitializationIterator == _automatorScriptInitialization.cend() ||
+      _automatorConnectionContextIterator == _automatorScriptInitializationConnectionContext.cend())
   {
-    _autoStateIterator = _autoStates.cend();
+    throw astr_global::Exception("Scripts Overflow");
+  }
+
+  static int n = 0;
+  D(n++ << " ---STATE---:" << state);
+
+  if (State::Signal == state.status())
+  {
+    switch (state.type())
+    {
+      case State::OfonoManagerModemRemoved:
+      {
+        _automatorInitializationIterator = _automatorScriptInitialization.begin();
+        _automatorConnectionContextIterator = _automatorScriptInitializationConnectionContext.begin();
+        _automatorData.modemLockdown.clear();
+        _automatorData.modemPowered.clear();
+        _automatorData.modemOnline.clear();
+        _automatorData.simManagerCardIdentifier.clear();
+        _automatorData.simManagerServiceProviderName.clear();
+        _automatorData.networkRegistrationStatus.clear();
+        _automatorData.connectionContextAccessPointName.clear();
+        _automatorData.connectionContextUsername.clear();
+        _automatorData.connectionContextPassword.clear();
+      }
+      break;
+      case State::OfonoModemInterfaceSimManagerRemoved:
+      {
+        _automatorData.simManagerCardIdentifier.clear();
+        _automatorData.simManagerServiceProviderName.clear();
+      }
+      break;
+      case State::OfonoModemInterfaceNetworkRegistrationRemoved:
+      {
+        _automatorData.networkRegistrationStatus.clear();
+      }
+      break;
+      case State::OfonoModemInterfaceConnectionManagerRemoved:
+      {
+        _automatorConnectionContextIterator = _automatorScriptInitializationConnectionContext.begin();
+        _automatorData.connectionContextAccessPointName.clear();
+        _automatorData.connectionContextUsername.clear();
+        _automatorData.connectionContextPassword.clear();
+        _automatorData.connectionManagerAttached.clear();
+        _automatorData.connectionManagerPowered.clear();
+        _automatorData.connectionContextActive.clear();
+      }
+      break;
+      case State::OfonoModemPowered:
+      {
+        _automatorData.modemPowered = state.value();
+      }
+      break;
+      case State::OfonoModemOnline:
+      {
+        _automatorData.modemOnline = state.value();
+      }
+      break;
+      case State::OfonoModemLockdown:
+      {
+        _automatorData.modemLockdown = state.value();
+      }
+      break;
+      case State::OfonoSimManagerCardIdentifier:
+      {
+        _automatorData.simManagerCardIdentifier = state.value();
+      }
+      break;
+      case State::OfonoSimManagerServiceProviderName:
+      {
+        _automatorData.simManagerServiceProviderName = state.value();
+        _automatorData.provider = _settings.providerSettings(_automatorData.simManagerServiceProviderName.toString());
+        //        D("---PROVIDER---:" << _automatorData.provider.accessPointName << _automatorData.provider.username
+        //                            << _automatorData.provider.password);
+      }
+      break;
+      case State::OfonoNetworkRegistrationStatus:
+      {
+        _automatorData.networkRegistrationStatus = state.value();
+      }
+      break;
+
+      case State::OfonoConnectionContextAccessPointName:
+      {
+        _automatorData.connectionContextAccessPointName = state.value();
+      }
+      break;
+      case State::OfonoConnectionContextUsername:
+      {
+        _automatorData.connectionContextUsername = state.value();
+      }
+      break;
+      case State::OfonoConnectionContextPassword:
+      {
+        _automatorData.connectionContextPassword = state.value();
+      }
+      break;
+
+      case State::OfonoConnectionManagerAttached:
+      {
+        _automatorData.connectionManagerAttached = state.value();
+      }
+      break;
+      case State::OfonoConnectionManagerPowered:
+      {
+        _automatorData.connectionManagerPowered = state.value();
+      }
+      break;
+      case State::OfonoConnectionContextActive:
+      {
+        _automatorData.connectionContextActive = state.value();
+      }
+      break;
+
+      default: break;
+    }
+  }
+
+  AutomatorItem::Iterator iterator = _automatorInitializationIterator + 1;
+  if (_automatorScriptInitialization.cend() != iterator && (*iterator) == state)
+  {
+    _automatorInitializationIterator = iterator;
+    if (_automatorInitializationIterator->command)
+      _automatorInitializationIterator->command(_automatorInitializationIterator, sender_ptr, _automatorData);
+  }
+
+  iterator = _automatorConnectionContextIterator + 1;
+  if (_automatorScriptInitializationConnectionContext.cend() != iterator && (*iterator) == state)
+  {
+    _automatorConnectionContextIterator = iterator;
+    if (_automatorConnectionContextIterator->command)
+      _automatorConnectionContextIterator->command(_automatorConnectionContextIterator, sender_ptr, _automatorData);
+  }
+
+  if (!(_automatorInitializationIterator + 1 == _automatorScriptInitialization.cend() &&
+        _automatorConnectionContextIterator + 1 == _automatorScriptInitializationConnectionContext.cend()))
     return;
-  }
-  else if (state.type() == State::OfonoModemGetProperties && State::CallStarted == state.status())
-  {
-    _autoStateIterator = _autoStates.cbegin();
-  }
 
-  if (state.status() == State::CallError)
-  {
-    D("ERROR:" << state.error().message());
-  }
-
-  /*
-QVector<State>::const_iterator *p_iterator = nullptr;
-
-if (_modem == sender_ptr)
-  p_iterator = &_modemStateIterator;
-else if (_simManager == sender_ptr)
-  p_iterator = &_simManagerStateIterator;
-else if (_networkRegistration == sender_ptr)
-  p_iterator = &_networkRegistrationStateIterator;
-else if (_connectionManager == sender_ptr)
-  p_iterator = &_connectionManagerStateIterator;
-else if (_connectionContext == sender_ptr)
-  p_iterator = &_connectionContextStateIterator;
-else
-  return;
-
-
-  if (p_iterator && (*p_iterator) == _autoStates.cend())
+  const QVector<State::Type> types{State::OfonoConnectionContextActive,
+                                   State::OfonoConnectionManagerAttached,
+                                   State::OfonoConnectionManagerPowered,
+                                   State::OfonoNetworkRegistrationStatus,
+                                   State::OfonoModemOnline,
+                                   State::OfonoModemPowered};
+  if (!types.contains(state.type()))
     return;
-    */
-    /*
-  if (_autoStateIterator == _autoStates.cend()) return;
 
-  D("---START---:" << state << *_autoStateIterator);
-
-  QVector<State>::const_iterator nextIterator = _autoStateIterator + 1;
-  if (nextIterator == _autoStates.cend() || nextIterator->operator!=(state)) return;
-
-  const int index = nextIterator - _autoStates.begin();
-
-  switch (index)
+  if (!_automatorData.modemPowered.toBool())
   {
-  case 1:
-  {
-    ++_autoStateIterator;
-    D("XXX1:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 2:
-  {
-    _autoStateIterator += (_ofonoState.modem->lockdown ? 4 : 1);
-    D("XXX2:" << index << state << *_autoStateIterator);
-    _modem->call(State::OfonoModemLockdown, !_ofonoState.modem->lockdown);
-  }
-  break;
-  case 3:
-  {
-    ++_autoStateIterator;
-    D("XXX3:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 4:
-  {
-    ++_autoStateIterator;
-    D("XXX4:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 5:
-  {
-    ++_autoStateIterator;
-    D("XXX5:" << index << state << *_autoStateIterator);
-    _modem->call(State::OfonoModemLockdown, false);
-  }
-  break;
-  case 6:
-  {
-    ++_autoStateIterator;
-    D("XXX6:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 7:
-  {
-    ++_autoStateIterator;
-    D("XXX7:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 8:
-  {
-    ++_autoStateIterator;
-    D("XXX8:" << index << state << *_autoStateIterator);
     _modem->call(State::OfonoModemPowered, true);
+    return;
   }
-  break;
-  case 9:
-  {
-    ++_autoStateIterator;
-    D("XXX9:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 10:
-  {
-    ++_autoStateIterator;
-    D("XXX10:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 11:
-  {
-    ++_autoStateIterator;
-    D("XXX11:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 12:
-  {
-    ++_autoStateIterator;
-    D("XXX12:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 13:
-  {
-    ++_autoStateIterator;
-    D("XXX13:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 14:
-  {
-    ++_autoStateIterator;
-    D("XXX14:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 15:
-  {
-    ++_autoStateIterator;
-    D("XXX15:" << index << state << *_autoStateIterator);
 
-    D("COUNT:" << _connectionManager->contextsCount());
-    switch (_connectionManager->contextsCount())
-    {
-    case 0:
-    {
-      _autoStateIterator += 3;
-      _connectionManager->call(State::OfonoConnectionManagerAddContext, "internet");
-    }
-    break;
-    case 1:
-    {
-      _autoStateIterator += 5;
-    }
-    break;
-    default:
-    {
-      _autoStateIterator += 1;
-      _connectionManager->call(State::OfonoConnectionManagerRemoveContext, _connectionManager->contextPath());
-    }
-    break;
-    }
-    /// for Test:
-    /// _connectionManager->call(State::OfonoConnectionManagerAddContext, "internet");
-  }
-  break;
-  case 16:
+  if (!_automatorData.modemOnline.toBool())
   {
-    ++_autoStateIterator;
-    D("XXX16:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 17:
-  {
-    ++_autoStateIterator;
-    D("XXX17:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 18:
-  {
-    if (_connectionManager->contextsCount() > 1)
-    {
-      _autoStateIterator -= 2;
-      /// D("RRRRRRRRRR:" << _connectionManager->contextPath());
-      _connectionManager->call(State::OfonoConnectionManagerRemoveContext, _connectionManager->contextPath());
-    }
-    else
-    {
-      _autoStateIterator += 2;
-    }
-    D("XXX18:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 19:
-  {
-    ++_autoStateIterator;
-    D("XXX19:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 20:
-  {
-    ++_autoStateIterator;
-    D("XXX20:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 21:
-  {
-    ++_autoStateIterator;
-    D("XXX21:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 22:
-  {
-    ++_autoStateIterator;
-    D("XXX22:" << index << state << *_autoStateIterator);
     _modem->call(State::OfonoModemOnline, true);
+    return;
   }
-  break;
-  case 23:
-  {
-    ++_autoStateIterator;
-    D("XXX23:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 24:
-  {
-    ++_autoStateIterator;
-    D("XXX23:" << index << state << *_autoStateIterator);
-  }
-  break;
-  case 25:
-  {
-    ++_autoStateIterator;
-    D("XXX23:" << index << state << *_autoStateIterator);
-  }
-  break;
-  default:
-    break;
-  }
-  */
-}
 
+  //  State::OfonoNetworkRegistrationStatus
+  //[readonly: "unregistered" "registered" "searching" "denied" "unknown" "roaming"];
+  const QString status = _automatorData.networkRegistrationStatus.toString();
+  if ("unregistered" == status)
+  {
+    _networkRegistration->call(State::OfonoNetworkRegistrationRegister);
+    return;
+  }
+  else if ("registered" != status)
+  {
+    return;
+  }
+
+  if (!_automatorData.connectionManagerPowered.toBool())
+  {
+    _connectionManager->call(State::OfonoConnectionManagerPowered, true);
+    return;
+  }
+
+  if (_automatorData.connectionManagerAttached.toBool() && !_automatorData.connectionContextActive.toBool())
+  {
+    _connectionContext->call(State::OfonoConnectionContextActive, true);
+    return;
+  }
+
+  I("+++ STATUS +++:" << _automatorData.connectionContextActive << _automatorData.connectionManagerAttached);
+}
+*/
 void ModemManager::debugOfonoState(const ModemManagerData::OfonoState &state)
 {
   D("------------ OfonoState ------------");
   D("Ofono connected:" << state.isOfonoConnected);
-  if (!state.isOfonoConnected) return;
+  if (!state.isOfonoConnected)
+    return;
 
-  if (state.modem.isNull()) return;
+  if (state.modem.isNull())
+    return;
 
   D("----Modem----");
   D("Powered     :" << state.modem->powered);
@@ -725,19 +684,19 @@ void ModemManager::debugOfonoState(const ModemManagerData::OfonoState &state)
 void ModemManager::t_modemPowered(bool value)
 {
   DF() << value;
-  _modem->call(State::OfonoModemPowered, value);
+  _automator->run(_modem, State::OfonoModemPowered, value);
 }
 
 void ModemManager::t_modemOnline(bool value)
 {
   DF() << value;
-  _modem->call(State::OfonoModemOnline, value);
+  _automator->run(_modem, State::OfonoModemOnline, value);
 }
 
 void ModemManager::t_modemLockdown(bool value)
 {
   DF() << value;
-  _modem->call(State::OfonoModemLockdown, value);
+  _automator->run(_modem, State::OfonoModemLockdown, value);
 }
 
 void ModemManager::t_contextSetAPN(QString value)
@@ -759,3 +718,21 @@ void ModemManager::t_contextSetActive(bool value)
 {
   _connectionContext->call(State::OfonoConnectionContextActive, value);
 }
+
+// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+/*
+ModemManager::AutomatorItem::AutomatorItem(const State &_state, ModemManager::AutomatorItem::StateItemCommand _command)
+    : state(_state), command(_command)
+{
+}
+
+bool ModemManager::AutomatorItem::operator==(const State &state) const
+{
+  return state == this->state;
+}
+
+bool ModemManager::AutomatorItem::operator!=(const State &state) const
+{
+  return state != this->state;
+}
+*/
