@@ -48,8 +48,8 @@ ModemManager::ModemManager(const ModemManagerData::Settings &settings, QObject *
 
 void ModemManager::onStateChanged(const State &state)
 {
-  static int n = 0;
-  //  D("--- STATE --- " << ++n << state);
+  static ulong n = 0;
+  D("--- STATE --- " << ++n << state);
 
   QObject *sender_ptr = sender();
 

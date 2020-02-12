@@ -1,8 +1,8 @@
 #ifndef AUTOMATOR_H
 #define AUTOMATOR_H
 
+#include "AutomatorScript.h"
 #include "ModemManagerData.h"
-#include "ScriptsTypes.h"
 #include <QObject>
 
 class Automator : public QObject
@@ -16,19 +16,23 @@ public:
   void run(QObject *adapter, const State::Type type, const QVariant &value);
 
 private Q_SLOTS:
-  void onStatusChanged(const Scripts::Basic::Status status);
+  void onStatusChanged(const AutomatorScript::ScriptStatus status);
 
 private:
   const ModemManagerData::Settings &_settings;
-  Scripts::Basic _managerModemRemoved;
-  Scripts::Basic _managerModemAdded;
-  Scripts::Basic _modemLockdownDisable;
-  Scripts::Basic _modemLockdownEnable;
-  Scripts::Basic _modemPoweredDisable;
-  Scripts::Basic _modemPoweredEnable;
-  Scripts::Basic _modemOnlineDisable;
-  Scripts::Basic _modemOnlineEnable;
-  Scripts::Data _data;
+  AutomatorScript _managerModemRemoved;
+  AutomatorScript _managerModemAdded;
+  AutomatorScript _modemLockdownDisable;
+  AutomatorScript _modemLockdownEnable;
+  AutomatorScript _modemPoweredDisable;
+  AutomatorScript _modemPoweredEnable;
+  AutomatorScript _modemOnlineDisable;
+  AutomatorScript _modemOnlineEnable;
+  AutomatorScript _simManagerAdded;
+  AutomatorScript _networkRegistrationAdded;
+  AutomatorScript _connectionManagerAdded;
+  AutomatorScript _connectionContextAdded;
+  AutomatorScript::Data _data;
 };
 
 #endif // AUTOMATOR_H

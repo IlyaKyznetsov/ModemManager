@@ -76,8 +76,8 @@ OTHER_FILES += $$XML_FILES\
 
 SOURCES += \
         Automator.cpp \
+        AutomatorScript.cpp \
         ModemManagerData.cpp \
-        ScriptsTypes.cpp \
         test/TestGui.cpp \
         DeferredCall.cpp \
         Global.cpp \
@@ -98,8 +98,8 @@ SOURCES += \
 
 HEADERS += \
     Automator.h \
+    AutomatorScript.h \
     ModemManagerData.h \
-    ScriptsTypes.h \
     test/TestGui.h \
     DeferredCall.h \
     Global.h \
