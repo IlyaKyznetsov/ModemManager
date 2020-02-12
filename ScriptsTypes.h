@@ -51,15 +51,12 @@ public:
   ~Basic() = default;
   Status status() const {return _status;}
   void processing(QObject *sender, const State &state, const Scripts::Data &data);
+  void reset();
 
 Q_SIGNALS:
   void StatusChanged(const Scripts::Basic::Status status);
 
 private:
-  void reset();
-  bool isEnd() const;
-  bool isBegin() const;
-
   Status _status = NotStarted;
   const QVector<Item> _script;
   Item::Iterator _iterator;
