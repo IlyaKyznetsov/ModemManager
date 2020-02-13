@@ -25,11 +25,7 @@ ModemManager::ModemManager(const ModemManagerData::Settings &settings, QObject *
 {
   DF();
   _settings.debug();
-
-  //  connect(this, &ModemManager::OfonoStateChanged, this, &ModemManager::debugOfonoState);
-
-  //  connect(_deferredCall, &DeferredCall::SendCallData, this, &ModemManager::onDeferredCall);
-
+  connect(_automator, &Automator::Call, this, &ModemManager::call);
   connect(_ofonoManager, &OfonoManager::StateChanged, this, &ModemManager::onStateChanged);
   connect(_manager, &Manager::StateChanged, this, &ModemManager::onStateChanged);
   connect(_modem, &Modem::StateChanged, this, &ModemManager::onStateChanged);
@@ -40,11 +36,6 @@ ModemManager::ModemManager(const ModemManagerData::Settings &settings, QObject *
 
   _ofonoManager->reset(Ofono::SERVICE);
 }
-
-// bool ModemManager::deferredCall(const State::Type type, const QVariant &value)
-//{
-//  return _deferredCall->deferredCall(type, value);
-//}
 
 void ModemManager::onStateChanged(const State &state)
 {
@@ -84,39 +75,50 @@ void ModemManager::onStateChanged(const State &state)
   }
 }
 
-/*
-void ModemManager::onDeferredCall(State::Type type, const QVariant &value)
+void ModemManager::call(const State::Type callType, const QVariant &value)
 {
-  DF() << type;
-  switch (type)
+  DF() << "--- CALL ---" << State(callType, State::_EMPTYSTATUS_, value);
+  switch (callType)
   {
     case State::OfonoModemLockdown:
     case State::OfonoModemPowered:
     case State::OfonoModemOnline:
     {
-      if (_modem->isValid())
-        _modem->call(type, value);
+      if (!_modem->isValid())
+        return;
+      _modem->call(callType, value);
     }
     break;
-    case State::State::OfonoNetworkRegistrationScan:
-    case State::State::OfonoNetworkRegistrationRegister:
-    case State::State::OfonoNetworkRegistrationDeregister:
-    case State::State::OfonoNetworkRegistrationGetOperators:
+    case State::OfonoNetworkRegistrationRegister:
+    case State::OfonoNetworkRegistrationScan:
     {
-      if (_networkRegistration->isValid())
-        _networkRegistration->call(type);
+      if (!_networkRegistration->isValid())
+        return;
+      _networkRegistration->call(callType);
     }
     break;
+    case State::OfonoConnectionManagerRemoveContext:
+    case State::OfonoConnectionManagerAddContext:
+    {
+      if (!_connectionManager->isValid())
+        return;
+      _connectionManager->call(callType, value);
+    }
+    break;
+    case State::OfonoConnectionContextAccessPointName:
+    case State::OfonoConnectionContextUsername:
+    case State::OfonoConnectionContextPassword:
     case State::OfonoConnectionContextActive:
     {
-      if (_connectionContext->isValid())
-        _connectionContext->call(type, value);
+      if (!_connectionContext->isValid())
+        return;
+      _connectionContext->call(callType, value);
     }
     break;
     default: break;
   }
 }
-*/
+
 void ModemManager::_signalOfonoManager(const State &state)
 {
   // DF() << state;
@@ -684,19 +686,34 @@ void ModemManager::debugOfonoState(const ModemManagerData::OfonoState &state)
 void ModemManager::t_modemPowered(bool value)
 {
   DF() << value;
-  _automator->run(_modem, State::OfonoModemPowered, value);
+  _modem->call(State::OfonoModemPowered, value);
 }
 
 void ModemManager::t_modemOnline(bool value)
 {
   DF() << value;
-  _automator->run(_modem, State::OfonoModemOnline, value);
+  _modem->call(State::OfonoModemOnline, value);
 }
 
 void ModemManager::t_modemLockdown(bool value)
 {
   DF() << value;
-  _automator->run(_modem, State::OfonoModemLockdown, value);
+  _modem->call(State::OfonoModemLockdown, value);
+}
+
+void ModemManager::t_networkRegistered()
+{
+  _networkRegistration->call(State::OfonoNetworkRegistrationRegister);
+}
+
+void ModemManager::t_networkUnregistered()
+{
+  _networkRegistration->call(State::OfonoNetworkRegistrationDeregister);
+}
+
+void ModemManager::t_networkScan()
+{
+  _networkRegistration->call(State::OfonoNetworkRegistrationScan);
 }
 
 void ModemManager::t_contextSetAPN(QString value)
@@ -716,7 +733,7 @@ void ModemManager::t_contextSetPassword(QString value)
 
 void ModemManager::t_contextSetActive(bool value)
 {
-  _connectionContext->call(State::OfonoConnectionContextActive, value);
+  _connectionContext->call(State::OfonoConnectionContextActive, true);
 }
 
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=

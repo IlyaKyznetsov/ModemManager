@@ -146,8 +146,26 @@ void NetworkRegistration::call(const State::Type type)
     break;
     case State::OfonoNetworkRegistrationScan:
     {
-      Q_EMIT StateChanged(State(State::OfonoNetworkRegistrationScan, State::CallStarted));
-      throw astr_global::Exception("Не реализовано");
+      connect(new QDBusPendingCallWatcher(_interface->Scan(), _interface), &QDBusPendingCallWatcher::finished,
+              [this](QDBusPendingCallWatcher *watcher) {
+                QDBusPendingReply<ObjectPathPropertiesList> reply(*watcher);
+                watcher->deleteLater();
+                State::Type type = _currentCallType;
+                _currentCallType = State::_EMPTYTYPE_;
+                if (reply.isError())
+                {
+                  Q_EMIT StateChanged(State(type, State::CallError, reply.error()));
+                }
+                else
+                {
+                  for (const ObjectPathProperties &item : reply.value())
+                  {
+                    D("OPERATOR:" << item.path.path());
+                  }
+
+                  Q_EMIT StateChanged(State(type, State::CallFinished));
+                }
+              });
     }
     break;
     case State::OfonoNetworkRegistrationGetOperators:

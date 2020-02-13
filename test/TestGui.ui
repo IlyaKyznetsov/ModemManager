@@ -59,6 +59,36 @@
       </widget>
      </item>
      <item>
+      <widget class="QGroupBox" name="groupBox_3">
+       <property name="title">
+        <string>NetworkRegistration</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QPushButton" name="pbNetworkUnregistered">
+          <property name="text">
+           <string>Unregistered</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pbNetworkRegistered">
+          <property name="text">
+           <string>Registered</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pbNetworkScan">
+          <property name="text">
+           <string>Scan</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
       <widget class="QGroupBox" name="groupBox_2">
        <property name="title">
         <string>ConnectionContext</string>
@@ -70,7 +100,7 @@
            <string>APN</string>
           </property>
           <property name="checkable">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
          </widget>
         </item>
@@ -83,7 +113,7 @@
            <string>User</string>
           </property>
           <property name="checkable">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
          </widget>
         </item>
@@ -96,7 +126,7 @@
            <string>Password</string>
           </property>
           <property name="checkable">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
          </widget>
         </item>
@@ -109,7 +139,7 @@
            <string>Active</string>
           </property>
           <property name="checkable">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
          </widget>
         </item>

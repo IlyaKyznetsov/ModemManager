@@ -18,8 +18,8 @@ ModemManagerData::Settings::ModemManagerTimeouts::ModemManagerTimeouts(const int
 {
 }
 
-ModemManagerData::Settings::Provider::Provider(const QString &AccessPointName, const QString &Username,
-                                               const QString &Password)
+ModemManagerData::Settings::Provider::Provider(const QVariant &AccessPointName, const QVariant &Username,
+                                               const QVariant &Password)
     : accessPointName(AccessPointName), username(Username), password(Password)
 {
 }
@@ -37,7 +37,7 @@ bool ModemManagerData::Settings::addProvider(const QString &name, const ModemMan
 
 ModemManagerData::Settings::Provider ModemManagerData::Settings::providerSettings(const QString &provider) const
 {
-  return providers.value(provider, Provider(QString(), QString(), QString()));
+  return providers.value(provider, Provider());
 }
 
 void ModemManagerData::Settings::debug() const

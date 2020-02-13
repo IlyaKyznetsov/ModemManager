@@ -4,22 +4,28 @@
 #include "AutomatorScript.h"
 #include "ModemManagerData.h"
 #include <QObject>
+#include <QTimer>
 
 class Automator : public QObject
 {
   Q_OBJECT
 public:
   explicit Automator(const ModemManagerData::Settings &settings, QObject *parent = nullptr);
+  ~Automator();
 
 public:
   void processing(QObject *sender, const State &state);
-  void run(QObject *adapter, const State::Type type, const QVariant &value);
+
+Q_SIGNALS:
+  void Call(const State::Type callType, const QVariant &value);
 
 private Q_SLOTS:
   void onStatusChanged(const AutomatorScript::ScriptStatus status);
 
 private:
+  bool isAutomatorScriptStarted() const;
   const ModemManagerData::Settings &_settings;
+  QScopedPointer<QTimer> _timer;
   AutomatorScript _managerModemRemoved;
   AutomatorScript _managerModemAdded;
   AutomatorScript _modemLockdownDisable;
@@ -32,6 +38,11 @@ private:
   AutomatorScript _networkRegistrationAdded;
   AutomatorScript _connectionManagerAdded;
   AutomatorScript _connectionContextAdded;
+  AutomatorScript _connectionContextAccessPointName;
+  AutomatorScript _connectionContextUsername;
+  AutomatorScript _connectionContextPassword;
+  AutomatorScript _connectionContextActiveDisable;
+  AutomatorScript _connectionContextActiveEnable;
   AutomatorScript::Data _data;
 };
 

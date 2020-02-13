@@ -4,6 +4,7 @@
 #include <QMap>
 #include <QSharedPointer>
 #include <QString>
+#include <QVariant>
 
 class Manager;
 class Modem;
@@ -35,11 +36,11 @@ struct Settings
   };
   struct Provider
   {
-    QString accessPointName;
-    QString username;
-    QString password;
-    Provider(const QString &AccessPointName = QString(), const QString &Username = QString(),
-             const QString &Password = QString());
+    QVariant accessPointName;
+    QVariant username;
+    QVariant password;
+    Provider(const QVariant &AccessPointName = QVariant(), const QVariant &Username = QVariant(),
+             const QVariant &Password = QVariant());
   };
   Settings(const Settings::DBusTimeouts &DBusTimeouts, const Settings::ModemManagerTimeouts &ModemManagerTimeouts);
   bool addProvider(const QString &name, const Settings::Provider &settings);

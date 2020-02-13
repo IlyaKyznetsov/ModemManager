@@ -8,6 +8,8 @@ class AutomatorScript : public QObject
 {
   Q_OBJECT
 public:
+  static const State emptyState;
+
   enum ScriptStatus
   {
     NotStarted = 0,
@@ -24,13 +26,20 @@ public:
     QVariant simManagerCardIdentifier;
     QVariant simManagerServiceProviderName;
     QVariant networkRegistrationStatus;
+    QVariant connectionManagerAttached;
+    QVariant connectionManagerPowered;
     QVariant connectionContextAccessPointName;
     QVariant connectionContextUsername;
     QVariant connectionContextPassword;
-    QVariant connectionManagerAttached;
-    QVariant connectionManagerPowered;
     QVariant connectionContextActive;
     Data() = default;
+    void clearModem();
+    void clearSimManager();
+    void clearNetworkRegistration();
+    void clearConnectionManager();
+    void clearConnectionContext();
+    void clearAll();
+    void debug();
   };
 
   struct Item
@@ -50,7 +59,6 @@ public:
   ScriptStatus status() const;
   void reset();
   void processing(QObject *sender, const State &state, const Data &data);
-
 
 Q_SIGNALS:
   void StatusChanged(const ScriptStatus status);

@@ -16,6 +16,11 @@ int main(int argc, char *argv[])
   QObject::connect(gui->pbModemPowered, &QPushButton::clicked, mm, &ModemManager::t_modemPowered);
   QObject::connect(gui->pbModemOnline, &QPushButton::clicked, mm, &ModemManager::t_modemOnline);
   QObject::connect(gui->pbModemLockdown, &QPushButton::clicked, mm, &ModemManager::t_modemLockdown);
+
+  QObject::connect(gui->pbNetworkRegistered, &QPushButton::clicked, mm, &ModemManager::t_networkRegistered);
+  QObject::connect(gui->pbNetworkUnregistered, &QPushButton::clicked, mm, &ModemManager::t_networkUnregistered);
+  QObject::connect(gui->pbNetworkScan, &QPushButton::clicked, mm, &ModemManager::t_networkScan);
+
   QObject::connect(gui->pbContextAPN, &QPushButton::clicked,
                    [mm, gui]() { mm->t_contextSetAPN(gui->contextAPN->text()); });
   QObject::connect(gui->pbContextUsername, &QPushButton::clicked,

@@ -1,10 +1,8 @@
 #ifndef MODEMMANAGER_H
 #define MODEMMANAGER_H
 
-//#include "DeferredCall.h"
 #include "ModemManagerData.h"
-//#include "scripts/ScriptsTypes.h"
-//#include "types.h"
+#include "types.h"
 #include <QObject>
 
 class OfonoManager;
@@ -15,7 +13,6 @@ class NetworkRegistration;
 class ConnectionManager;
 class ConnectionContext;
 class Automator;
-class State;
 
 class ModemManager : public QObject
 {
@@ -29,6 +26,7 @@ Q_SIGNALS:
 
 private Q_SLOTS:
   void onStateChanged(const State &state);
+  void call(const State::Type callType, const QVariant &value);
 
 private:
   const ModemManagerData::Settings _settings;
@@ -111,6 +109,9 @@ public Q_SLOTS:
   void t_modemPowered(bool value);
   void t_modemOnline(bool value);
   void t_modemLockdown(bool value);
+  void t_networkRegistered();
+  void t_networkUnregistered();
+  void t_networkScan();
   void t_contextSetAPN(QString value);
   void t_contextSetUsername(QString value);
   void t_contextSetPassword(QString value);
