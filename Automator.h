@@ -21,12 +21,13 @@ Q_SIGNALS:
 
 private Q_SLOTS:
   void onStatusChanged(const AutomatorScript::ScriptStatus status);
+  void onTimeout();
 
 private:
-  bool isAutomatorScriptStarted() const;
   const ModemManagerData::Settings &_settings;
   QScopedPointer<QTimer> _timer;
-  AutomatorScript _managerModemRemoved;
+  int _scriptsRunningCount;
+  void debugScriptsRunning();
   AutomatorScript _managerModemAdded;
   AutomatorScript _modemLockdownDisable;
   AutomatorScript _modemLockdownEnable;
@@ -43,6 +44,13 @@ private:
   AutomatorScript _connectionContextPassword;
   AutomatorScript _connectionContextActiveDisable;
   AutomatorScript _connectionContextActiveEnable;
+//  void resetConnectionContext();
+//  void resetConnectionManager();
+//  void resetNetworkRegistration();
+//  void resetSimManager();
+//  void reset();
+  Добавить функции сброса _scriptsRunningCount и установку скриптов в начало
+
   AutomatorScript::Data _data;
 };
 

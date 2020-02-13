@@ -38,7 +38,6 @@ public:
     void clearNetworkRegistration();
     void clearConnectionManager();
     void clearConnectionContext();
-    void clearAll();
     void debug();
   };
 

@@ -103,15 +103,6 @@ void AutomatorScript::Data::clearConnectionContext()
   connectionContextActive.clear();
 }
 
-void AutomatorScript::Data::clearAll()
-{
-  clearConnectionContext();
-  clearConnectionManager();
-  clearNetworkRegistration();
-  clearSimManager();
-  clearModem();
-}
-
 void AutomatorScript::Data::debug()
 {
   D("ModemLockdown: " << modemLockdown);
