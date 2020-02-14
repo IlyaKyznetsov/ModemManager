@@ -34,7 +34,7 @@ void AutomatorScript::processing(QObject *sender, const State &state, const Auto
     if (emptyState == _iterator->state)
     {
       _status = Started;
-      Q_EMIT StatusChanged(Started);
+      Q_EMIT StatusChanged(Started, emptyState);
     }
 
     _iterator = iterator;
@@ -44,15 +44,15 @@ void AutomatorScript::processing(QObject *sender, const State &state, const Auto
     if (iterator + 1 == _script.cend())
     {
       _status = Finished;
-      Q_EMIT StatusChanged(Finished);
+      Q_EMIT StatusChanged(Finished, emptyState);
     }
   }
   else if (State(iterator->state.type(), State::CallError, iterator->state.value(), state.error()) == state)
   {
     D("--- PROCESSING ERROR ---:"
-      << "state:" << state << "iterator:" << iterator->state);
+      << "state:" << state << "iterator:" << iterator->state << state.error().message());
     _status = Error;
-    Q_EMIT StatusChanged(Error);
+    Q_EMIT StatusChanged(Error, state);
   }
 }
 

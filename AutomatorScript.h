@@ -60,7 +60,7 @@ public:
   void processing(QObject *sender, const State &state, const Data &data);
 
 Q_SIGNALS:
-  void StatusChanged(const ScriptStatus status);
+  void StatusChanged(const ScriptStatus status, const State &state);
 
 private:
   ScriptStatus _status;

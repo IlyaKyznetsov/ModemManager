@@ -13,9 +13,14 @@ int main(int argc, char *argv[])
   TestGui *gui = new TestGui();
 
   QObject::connect(mm, &ModemManager::OfonoStateChanged, gui, &TestGui::OfonoStateChanged);
-  QObject::connect(gui->pbModemPowered, &QPushButton::clicked, mm, &ModemManager::t_modemPowered);
-  QObject::connect(gui->pbModemOnline, &QPushButton::clicked, mm, &ModemManager::t_modemOnline);
-  QObject::connect(gui->pbModemLockdown, &QPushButton::clicked, mm, &ModemManager::t_modemLockdown);
+
+  QObject::connect(gui->pbModemPoweredOff, &QPushButton::clicked, [mm]() { mm->t_modemPowered(false); });
+  QObject::connect(gui->pbModemPoweredOn, &QPushButton::clicked, [mm]() { mm->t_modemPowered(true); });
+
+  QObject::connect(gui->pbModemOffline, &QPushButton::clicked, [mm]() { mm->t_modemOnline(false); });
+  QObject::connect(gui->pbModemOnline, &QPushButton::clicked, [mm]() { mm->t_modemOnline(true); });
+
+  //  QObject::connect(gui->pbModemLockdown, &QPushButton::clicked, mm, &ModemManager::t_modemLockdown);
 
   QObject::connect(gui->pbNetworkRegistered, &QPushButton::clicked, mm, &ModemManager::t_networkRegistered);
   QObject::connect(gui->pbNetworkUnregistered, &QPushButton::clicked, mm, &ModemManager::t_networkUnregistered);

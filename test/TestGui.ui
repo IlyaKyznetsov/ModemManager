@@ -26,12 +26,19 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
-         <widget class="QPushButton" name="pbModemPowered">
+         <widget class="QPushButton" name="pbModemPoweredOn">
           <property name="text">
-           <string>Powered</string>
+           <string>PoweredOn</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pbModemPoweredOff">
+          <property name="text">
+           <string>PoweredOff</string>
           </property>
           <property name="checkable">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
          </widget>
         </item>
@@ -41,7 +48,14 @@
            <string>Online</string>
           </property>
           <property name="checkable">
-           <bool>true</bool>
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pbModemOffline">
+          <property name="text">
+           <string>Offline</string>
           </property>
          </widget>
         </item>
@@ -51,7 +65,14 @@
            <string>Lockdown</string>
           </property>
           <property name="checkable">
-           <bool>true</bool>
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pbModemLockup">
+          <property name="text">
+           <string>Lockup</string>
           </property>
          </widget>
         </item>
