@@ -3,7 +3,7 @@
 const State AutomatorScript::emptyState = State(State::_EMPTYTYPE_, State::_EMPTYSTATUS_);
 
 AutomatorScript::AutomatorScript(const QVector<AutomatorScript::Item> &script, QObject *parent)
-    : QObject(parent), _status(NotStarted), _script(script), _iterator(script.cbegin())
+    : QObject(parent), _status(State::_EMPTYSTATUS_), _script(script), _iterator(script.cbegin())
 {
 }
 
@@ -20,6 +20,12 @@ void AutomatorScript::reset()
 
 void AutomatorScript::processing(QObject *sender, const State &state, const AutomatorScript::Data &data)
 {
+  if (_script.front() == state)
+  {
+    Q_EMIT StatusChanged(State::Signal, QDBusError());
+    return;
+  }
+
   if (_iterator == _script.cend())
     throw 1;
 
@@ -33,8 +39,8 @@ void AutomatorScript::processing(QObject *sender, const State &state, const Auto
     //      << "state:" << state << "iterator:" << iterator->state);
     if (emptyState == _iterator->state)
     {
-      _status = Started;
-      Q_EMIT StatusChanged(Started, emptyState);
+      _status = State::CallStarted
+      Q_EMIT StatusChanged(_status, QDBusError());
     }
 
     _iterator = iterator;
@@ -43,16 +49,16 @@ void AutomatorScript::processing(QObject *sender, const State &state, const Auto
 
     if (iterator + 1 == _script.cend())
     {
-      _status = Finished;
-      Q_EMIT StatusChanged(Finished, emptyState);
+      _status = State::CallFinished;
+      Q_EMIT StatusChanged(_status, QDBusError());
     }
   }
   else if (State(iterator->state.type(), State::CallError, iterator->state.value(), state.error()) == state)
   {
     D("--- PROCESSING ERROR ---:"
       << "state:" << state << "iterator:" << iterator->state << state.error().message());
-    _status = Error;
-    Q_EMIT StatusChanged(Error, state);
+    _status = State::CallError;
+    Q_EMIT StatusChanged(_status, state.error());
   }
 }
 
