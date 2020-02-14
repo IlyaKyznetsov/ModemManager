@@ -10,14 +10,6 @@ class AutomatorScript : public QObject
 public:
   static const State emptyState;
 
-  enum ScriptStatus
-  {
-    NotStarted = 0,
-    Started,
-    Finished,
-    Error
-  };
-
   struct Data
   {
     QVariant modemLockdown;
@@ -55,15 +47,15 @@ public:
 public:
   AutomatorScript(const QVector<Item> &script, QObject *parent = nullptr);
   ~AutomatorScript() = default;
-  ScriptStatus status() const;
+  State::Status status() const;
   void reset();
   void processing(QObject *sender, const State &state, const Data &data);
 
 Q_SIGNALS:
-  void StatusChanged(const ScriptStatus status, const State &state);
+  void StatusChanged(const State::Status status, const QDBusError &error);
 
 private:
-  ScriptStatus _status;
+  State::Status _status;
   const QVector<Item> _script;
   Item::Iterator _iterator;
 };
