@@ -20,31 +20,46 @@ Q_SIGNALS:
   void Call(const State::Type callType, const QVariant &value);
 
 private Q_SLOTS:
-  void onStatusChanged(const AutomatorScript::ScriptStatus status, const State &state);
-  void onTimeout();
+  void automatorScriptStatusChanged(const State::Status status, const QDBusError &error);
 
 private:
   const ModemManagerData::Settings &_settings;
-  QScopedPointer<QTimer> _timer;
-  int _scriptsRunningCount;
+  QScopedPointer<QTimer> _networkRegistrationTimer;
   void debugScriptsRunning();
-  bool _isModem;
+  AutomatorScript _managerModemRemoved;
   AutomatorScript _managerModemAdded;
-
+  //
+  AutomatorScript _modemLockdownSignal;
   AutomatorScript _modemLockdownDisable;
   AutomatorScript _modemLockdownEnable;
+  //
+  AutomatorScript _modemPoweredSignal;
   AutomatorScript _modemPoweredDisable;
   AutomatorScript _modemPoweredEnable;
+  //
+  AutomatorScript _modemOnlineSignal;
   AutomatorScript _modemOnlineDisable;
   AutomatorScript _modemOnlineEnable;
-
+  //
+  AutomatorScript _simManagerRemoved;
   AutomatorScript _simManagerAdded;
+  //
+  AutomatorScript _networkRegistrationRemoved;
   AutomatorScript _networkRegistrationAdded;
+  //
+  AutomatorScript _connectionManagerRemoved;
   AutomatorScript _connectionManagerAdded;
+  //
+  AutomatorScript _connectionContextRemoved;
   AutomatorScript _connectionContextAdded;
+  //
+  AutomatorScript _connectionContextAccessPointNameSignal;
   AutomatorScript _connectionContextAccessPointName;
+  AutomatorScript _connectionContextUsernameSignal;
   AutomatorScript _connectionContextUsername;
+  AutomatorScript _connectionContextPasswordSignal;
   AutomatorScript _connectionContextPassword;
+  AutomatorScript _connectionContextActiveSignal;
   AutomatorScript _connectionContextActiveDisable;
   AutomatorScript _connectionContextActiveEnable;
   void resetConnectionContext();

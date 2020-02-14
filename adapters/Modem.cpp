@@ -112,18 +112,21 @@ void Modem::call(const State::Type type, const QVariant &value)
 
   Q_EMIT StateChanged(State(type, State::CallStarted, value));
   if (State::_EMPTYTYPE_ != _currentCallType)
-    Q_EMIT StateChanged(State(type, State::CallError, "Running another call"));
+    Q_EMIT StateChanged(State(type, State::CallError, value, QDBusError(QDBusError::Other,"Running another call")));
 
   _currentCallType = type;
+  _currentCallValue = value;
   connect(new QDBusPendingCallWatcher(_interface->SetProperty(name, QDBusVariant(value)), _interface),
           &QDBusPendingCallWatcher::finished, [this](QDBusPendingCallWatcher *watcher) {
             QDBusPendingReply<> reply(*watcher);
             watcher->deleteLater();
             State::Type type = _currentCallType;
+            QVariant value = _currentCallValue;
             _currentCallType = State::_EMPTYTYPE_;
+            _currentCallValue.clear();
             if (reply.isError())
             {
-              Q_EMIT StateChanged(State(type, State::CallError, reply.error()));
+              Q_EMIT StateChanged(State(type, State::CallError, value, reply.error()));
             }
             else
             {

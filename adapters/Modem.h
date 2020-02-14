@@ -25,6 +25,7 @@ private:
   QStringList _modemInterfaces;
   QList<State::Type> _modemInterfacesChanged(const QStringList &interfaces);
   State::Type _currentCallType;
+  QVariant _currentCallValue;
 };
 
 #endif // MODEM_H

@@ -25,6 +25,8 @@ public:
     QVariant connectionContextPassword;
     QVariant connectionContextActive;
     Data() = default;
+    void setValue(const State::Type type, const QVariant& value);
+
     void clearModem();
     void clearSimManager();
     void clearNetworkRegistration();
