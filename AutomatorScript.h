@@ -25,13 +25,6 @@ public:
     QVariant connectionContextPassword;
     QVariant connectionContextActive;
     Data() = default;
-    void setValue(const State::Type type, const QVariant& value);
-
-    void clearModem();
-    void clearSimManager();
-    void clearNetworkRegistration();
-    void clearConnectionManager();
-    void clearConnectionContext();
     void debug();
   };
 
@@ -54,7 +47,7 @@ public:
   void processing(QObject *sender, const State &state, const Data &data);
 
 Q_SIGNALS:
-  void StatusChanged(const State::Status status, const QDBusError &error);
+  void StatusChanged(const State::Status status, const State &state);
 
 private:
   State::Status _status;

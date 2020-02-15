@@ -130,7 +130,7 @@ void Modem::call(const State::Type type, const QVariant &value)
             }
             else
             {
-              Q_EMIT StateChanged(State(type, State::CallFinished));
+              Q_EMIT StateChanged(State(type, State::CallFinished, value));
             }
           });
 }

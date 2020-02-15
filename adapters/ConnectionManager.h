@@ -25,6 +25,7 @@ private:
   const int _dbusTimeout;
   OfonoConnectionManagerInterface *_interface;
   State::Type _currentCallType;
+  QVariant _currentCallValue;
   QStringList _contextsPath;
   inline void _getProperties();
   inline void _getContexts();

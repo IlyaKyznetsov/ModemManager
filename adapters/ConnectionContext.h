@@ -22,6 +22,7 @@ private:
   const int _dbusTimeout;
   OfonoConnectionContextInterface *_interface;
   State::Type _currentCallType;
+  QVariant _currentCallValue;
 };
 
 #endif // CONNECTIONCONTEXT_H
