@@ -23,34 +23,12 @@ private Q_SLOTS:
   void automatorScriptStatusChanged(const State::Status status, const State &state);
 
 private:
+  void autoConnection(const State::Status status, const AutomatorScript::Type type, const State &state);
   const ModemManagerData::Settings &_settings;
-  QScopedPointer<QTimer> _networkRegistrationTimer;
-  void debugScriptsRunning();
-  AutomatorScript _managerModemAdded;
-  //
-  AutomatorScript _modemLockdownDisable;
-  AutomatorScript _modemLockdownEnable;
-  //
-  AutomatorScript _modemPoweredDisable;
-  AutomatorScript _modemPoweredEnable;
-  //
-  AutomatorScript _modemOnlineDisable;
-  AutomatorScript _modemOnlineEnable;
-  //
-  AutomatorScript _simManagerAdded;
-  //
-  AutomatorScript _networkRegistrationAdded;
-  //
-  AutomatorScript _connectionManagerAdded;
-  //
-  AutomatorScript _connectionContextAdded;
-  AutomatorScript _connectionContextAccessPointName;
-  AutomatorScript _connectionContextUsername;
-  AutomatorScript _connectionContextPassword;
-  AutomatorScript _connectionContextActiveDisable;
-  AutomatorScript _connectionContextActiveEnable;
-
+  QScopedPointer<QTimer> _timer;
+  QMap<AutomatorScript::Type, AutomatorScript*> _scripts;
   AutomatorScript::Data _data;
+  void debugScriptsRunning();
 };
 
 #endif // AUTOMATOR_H
