@@ -79,7 +79,6 @@ SOURCES += \
         AutomatorScript.cpp \
         ModemManagerData.cpp \
         test/TestGui.cpp \
-        DeferredCall.cpp \
         Global.cpp \
         ModemManager.cpp \
         adapters/ConnectionContext.cpp \
@@ -101,7 +100,6 @@ HEADERS += \
     AutomatorScript.h \
     ModemManagerData.h \
     test/TestGui.h \
-    DeferredCall.h \
     Global.h \
     ModemManager.h \
     adapters/ConnectionContext.h \

@@ -65,7 +65,7 @@ public:
   State::Status status() const;
   Type type() const;
   void reset();
-  void processing(QObject *sender, const State &state, const Data &data);
+  bool processing(QObject *sender, const State &state, const Data &data);
   operator QString() const;
 
 Q_SIGNALS:
@@ -76,6 +76,21 @@ private:
   State::Status _status;
   const QVector<Item> _script;
   Item::Iterator _iterator;
+};
+
+class DeferredCall
+{
+public:
+  DeferredCall();
+  DeferredCall(const State::Type callType, const QVariant &callValue);
+  bool isEmpty() const;
+  State::Type type() const;
+  QVariant value() const;
+  void reset(const State::Type callType = State::_EMPTYTYPE_, const QVariant &callValue = QVariant());
+
+private:
+  State::Type _callType;
+  QVariant _callValue;
 };
 
 #endif // AUTOMATORSCRIPT_H

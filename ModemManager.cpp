@@ -37,8 +37,8 @@ ModemManager::ModemManager(const ModemManagerData::Settings &settings, QObject *
 
 void ModemManager::onStateChanged(const State &state)
 {
-  static ulong n = 0;
-  D("--- STATE --- " << ++n << state);
+//  static ulong n = 0;
+//  D("--- STATE --- " << ++n << state);
 
   QObject *sender_ptr = sender();
 
@@ -75,7 +75,7 @@ void ModemManager::onStateChanged(const State &state)
 
 void ModemManager::call(const State::Type callType, const QVariant &value)
 {
-  DF() << "--- CALL ---" << State(callType, State::_EMPTYSTATUS_, value);
+//  DF() << "--- CALL ---" << State(callType, State::_EMPTYSTATUS_, value);
   switch (callType)
   {
   case State::OfonoModemLockdown:

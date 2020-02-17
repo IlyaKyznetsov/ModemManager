@@ -23,10 +23,17 @@ void AutomatorScript::reset()
   _iterator = _script.cbegin();
 }
 
-void AutomatorScript::processing(QObject *sender, const State &state, const AutomatorScript::Data &data)
+bool AutomatorScript::processing(QObject *sender, const State &state, const AutomatorScript::Data &data)
 {
+  if (_iterator == _script.cend())
+  {
+    C("Bad iterator");
+    throw astr_global::Exception("Bad iterator");
+  }
+
   const Item::Iterator iterator = _iterator + 1;
-  if (iterator == _script.cend()) return;
+  if (iterator == _script.cend()) return false;
+
 
   if (iterator->state == state)
   {
@@ -44,12 +51,15 @@ void AutomatorScript::processing(QObject *sender, const State &state, const Auto
       _status = State::CallFinished;
       Q_EMIT StatusChanged(_status, state);
     }
+    return true;
   }
   else if (State(iterator->state.type(), State::CallError, iterator->state.value(), state.error()) == state)
   {
     _status = State::CallError;
     Q_EMIT StatusChanged(_status, state);
+    return true;
   }
+  return false;
 }
 
 AutomatorScript::operator QString() const
@@ -74,12 +84,13 @@ AutomatorScript::operator QString() const
     { ConnectionContextActiveEnable, "Script::ConnectionContextActiveEnable" }
   };
 
-  const QMap<State::Status, QString> statuses = { { State::Status::_EMPTYSTATUS_,   "_EMPTYSTATUS_ " },
-                                                  { State::Status::Signal,          "Signal      : " },
-                                                  { State::Status::CallStarted,     "CallStarted : " },
-                                                  { State::Status::CallFinished,    "CallFinished: " },
-                                                  { State::Status::CallError,       "CallError   : " } };
-  return "(" + statuses.value(status())+types.value(_type) + ")";
+  const QMap<State::Status, QString> statuses = { { State::Status::_EMPTYSTATUS_,
+                                                    "_EMPTYSTATUS_ " },
+                                                  { State::Status::Signal, "Signal      : " },
+                                                  { State::Status::CallStarted, "CallStarted : " },
+                                                  { State::Status::CallFinished, "CallFinished: " },
+                                                  { State::Status::CallError, "CallError   : " } };
+  return "(" + statuses.value(status()) + types.value(_type) + ")";
 }
 
 AutomatorScript::Item::Item(const State &_state, AutomatorScript::Item::StateItemCommand _command)
@@ -111,4 +122,34 @@ void AutomatorScript::Data::debug()
   D("ConnectionManagerAttached       :" << connectionManagerAttached);
   D("ConnectionManagerPowered        :" << connectionManagerPowered);
   D("ConnectionContextActive         :" << connectionContextActive);
+}
+
+DeferredCall::DeferredCall() : _callType(State::_EMPTYTYPE_)
+{
+}
+
+DeferredCall::DeferredCall(const State::Type callType, const QVariant &callValue)
+: _callType(callType), _callValue(callValue)
+{
+}
+
+bool DeferredCall::isEmpty() const
+{
+  return State::_EMPTYTYPE_ == _callType;
+}
+
+State::Type DeferredCall::type() const
+{
+  return _callType;
+}
+
+QVariant DeferredCall::value() const
+{
+  return _callValue;
+}
+
+void DeferredCall::reset(const State::Type callType, const QVariant &callValue)
+{
+  _callType = callType;
+  _callValue = callValue;
 }
