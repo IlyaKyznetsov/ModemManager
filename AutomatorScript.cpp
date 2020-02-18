@@ -2,28 +2,22 @@
 
 const State AutomatorScript::emptyState = State(State::_EMPTYTYPE_, State::_EMPTYSTATUS_);
 
-AutomatorScript::AutomatorScript(const Type type, const QVector<AutomatorScript::Item> &script, QObject *parent)
-: QObject(parent), _type(type), _status(State::_EMPTYSTATUS_), _script(script), _iterator(script.cbegin())
+AutomatorScript::AutomatorScript(const QVector<AutomatorScript::Item> &script)
+    : _script(script), _iterator(script.cbegin()), _scriptStatus(State::_EMPTYSTATUS_)
 {
 }
 
 State::Status AutomatorScript::status() const
 {
-  return _status;
+  return _scriptStatus;
 }
 
-AutomatorScript::Type AutomatorScript::type() const
+QDBusError AutomatorScript::error() const
 {
-  return _type;
+  return _scriptError;
 }
 
-void AutomatorScript::reset()
-{
-  _status = State::_EMPTYSTATUS_;
-  _iterator = _script.cbegin();
-}
-
-bool AutomatorScript::processing(QObject *sender, const State &state, const AutomatorScript::Data &data)
+State::Status AutomatorScript::processing(const State &state)
 {
   if (_iterator == _script.cend())
   {
@@ -32,69 +26,48 @@ bool AutomatorScript::processing(QObject *sender, const State &state, const Auto
   }
 
   const Item::Iterator iterator = _iterator + 1;
-  if (iterator == _script.cend()) return false;
-
+  if (iterator == _script.cend())
+    return _scriptStatus;
 
   if (iterator->state == state)
   {
     if (emptyState == _iterator->state)
-    {
-      _status = State::CallStarted;
-      Q_EMIT StatusChanged(_status, state);
-    }
+      _scriptStatus = State::CallStarted;
 
     _iterator = iterator;
-    if (_iterator->command) _iterator->command(_iterator, sender, data);
-
     if (iterator + 1 == _script.cend())
     {
-      _status = State::CallFinished;
-      Q_EMIT StatusChanged(_status, state);
+      _iterator = _script.cbegin();
+      _scriptStatus = State::CallFinished;
     }
-    return true;
   }
   else if (State(iterator->state.type(), State::CallError, iterator->state.value(), state.error()) == state)
   {
-    _status = State::CallError;
-    Q_EMIT StatusChanged(_status, state);
-    return true;
+    _iterator = _script.cbegin();
+    _scriptStatus = State::CallError;
+    _scriptError = state.error();
   }
-  return false;
+  return _scriptStatus;
+}
+
+void AutomatorScript::reset()
+{
+  _iterator = _script.cbegin();
+  _scriptStatus = State::_EMPTYSTATUS_;
+  _scriptError = QDBusError();
 }
 
 AutomatorScript::operator QString() const
 {
-  const QMap<Type, QString> types{
-    { _EMPTYTYPE_, "Script::__EMPTYTYPE__" },
-    { ManagerModemAdded, "Script::ManagerModemAdded" },
-    { ModemLockdownDisable, "Script::ModemLockdownDisable" },
-    { ModemLockdownEnable, "Script::ModemLockdownEnable" },
-    { ModemPoweredDisable, "Script::ModemPoweredDisable" },
-    { ModemPoweredEnable, "Script::ModemPoweredEnable" },
-    { ModemOnlineDisable, "Script::ModemOnlineDisable" },
-    { ModemOnlineEnable, "Script::ModemOnlineEnable" },
-    { SimManagerAdded, "Script::SimManagerAdded" },
-    { NetworkRegistrationAdded, "Script::NetworkRegistrationAdded" },
-    { ConnectionManagerAdded, "Script::ConnectionManagerAdded" },
-    { ConnectionContextAdded, "Script::ConnectionContextAdded" },
-    { ConnectionContextAccessPointName, "Script::ConnectionContextAccessPointName" },
-    { ConnectionContextUsername, "Script::ConnectionContextUsername" },
-    { ConnectionContextPassword, "Script::ConnectionContextPassword" },
-    { ConnectionContextActiveDisable, "Script::ConnectionContextActiveDisable" },
-    { ConnectionContextActiveEnable, "Script::ConnectionContextActiveEnable" }
-  };
-
-  const QMap<State::Status, QString> statuses = { { State::Status::_EMPTYSTATUS_,
-                                                    "_EMPTYSTATUS_ " },
-                                                  { State::Status::Signal, "Signal      : " },
-                                                  { State::Status::CallStarted, "CallStarted : " },
-                                                  { State::Status::CallFinished, "CallFinished: " },
-                                                  { State::Status::CallError, "CallError   : " } };
-  return "(" + statuses.value(status()) + types.value(_type) + ")";
+  const QMap<State::Status, QString> statuses = {{State::_EMPTYSTATUS_, "_EMPTYSTATUS_"},
+                                                 {State::Signal, "Signal"},
+                                                 {State::CallStarted, "CallStarted"},
+                                                 {State::CallFinished, "CallFinished"},
+                                                 {State::CallError, "CallError"}};
+  return statuses.value(_scriptStatus);
 }
 
-AutomatorScript::Item::Item(const State &_state, AutomatorScript::Item::StateItemCommand _command)
-: state(_state), command(_command)
+AutomatorScript::Item::Item(const State &_state) : state(_state)
 {
 }
 
@@ -106,50 +79,4 @@ bool AutomatorScript::Item::operator==(const State &state) const
 bool AutomatorScript::Item::operator!=(const State &state) const
 {
   return state != this->state;
-}
-
-void AutomatorScript::Data::debug()
-{
-  D("ModemLockdown                   : " << modemLockdown);
-  D("ModemPowered                    : " << modemPowered);
-  D("ModemOnline                     : " << modemOnline);
-  D("SimManagerCardIdentifier        : " << simManagerCardIdentifier);
-  D("SimManagerServiceProviderName   :" << simManagerServiceProviderName);
-  D("NetworkRegistrationStatus       :" << networkRegistrationStatus);
-  D("ConnectionContextAccessPointName:" << connectionContextAccessPointName);
-  D("ConnectionContextUsername       :" << connectionContextUsername);
-  D("ConnectionContextPassword       :" << connectionContextPassword);
-  D("ConnectionManagerAttached       :" << connectionManagerAttached);
-  D("ConnectionManagerPowered        :" << connectionManagerPowered);
-  D("ConnectionContextActive         :" << connectionContextActive);
-}
-
-DeferredCall::DeferredCall() : _callType(State::_EMPTYTYPE_)
-{
-}
-
-DeferredCall::DeferredCall(const State::Type callType, const QVariant &callValue)
-: _callType(callType), _callValue(callValue)
-{
-}
-
-bool DeferredCall::isEmpty() const
-{
-  return State::_EMPTYTYPE_ == _callType;
-}
-
-State::Type DeferredCall::type() const
-{
-  return _callType;
-}
-
-QVariant DeferredCall::value() const
-{
-  return _callValue;
-}
-
-void DeferredCall::reset(const State::Type callType, const QVariant &callValue)
-{
-  _callType = callType;
-  _callValue = callValue;
 }

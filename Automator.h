@@ -13,23 +13,87 @@ public:
   explicit Automator(const ModemManagerData::Settings &settings, QObject *parent = nullptr);
   ~Automator();
 
-public:
-  void processing(QObject *sender, const State &state);
-
 Q_SIGNALS:
   void Call(const State::Type callType, const QVariant &callValue);
 
-private Q_SLOTS:
-  void automatorScriptStatusChanged(const State::Status scriptStatus, const State &state);
+public:
+  void processing(const State &state);
+  void reset();
 
 private:
+  enum ScriptType
+  {
+    _EMPTYTYPE_ = 0,
+    ManagerModemAdded,
+    ModemLockdownDisable,
+    ModemLockdownEnable,
+    ModemPoweredDisable,
+    ModemPoweredEnable,
+    ModemOnlineDisable,
+    ModemOnlineEnable,
+    SimManagerAdded,
+    NetworkRegistrationAdded,
+    ConnectionManagerAdded,
+    ConnectionContextAdded,
+    ConnectionContextAccessPointName,
+    ConnectionContextUsername,
+    ConnectionContextPassword,
+    ConnectionContextActiveDisable,
+    ConnectionContextActiveEnable
+  };
+  QString toString(ScriptType type)
+  {
+    QMap<ScriptType, QString> types{{_EMPTYTYPE_, "_EMPTYTYPE_"},
+                                    {ManagerModemAdded, "ManagerModemAdded"},
+                                    {ModemLockdownDisable, "ModemLockdownDisable"},
+                                    {ModemLockdownEnable, "ModemLockdownEnable"},
+                                    {ModemPoweredDisable, "ModemPoweredDisable"},
+                                    {ModemPoweredEnable, "ModemPoweredEnable"},
+                                    {ModemOnlineDisable, "ModemOnlineDisable"},
+                                    {ModemOnlineEnable, "ModemOnlineEnable"},
+                                    {SimManagerAdded, "SimManagerAdded"},
+                                    {NetworkRegistrationAdded, "NetworkRegistrationAdded"},
+                                    {ConnectionManagerAdded, "ConnectionManagerAdded"},
+                                    {ConnectionContextAdded, "ConnectionContextAdded"},
+                                    {ConnectionContextAccessPointName, "ConnectionContextAccessPointName"},
+                                    {ConnectionContextUsername, "ConnectionContextUsername"},
+                                    {ConnectionContextPassword, "ConnectionContextPassword"},
+                                    {ConnectionContextActiveDisable, "ConnectionContextActiveDisable"},
+                                    {ConnectionContextActiveEnable, "ConnectionContextActiveEnable"}};
+    return types.value(type);
+  }
+
+  struct Data
+  {
+    bool restartModem = false;
+    bool managerModemAdded = false;
+    bool modemLockdown = false;
+    bool modemPowered = false;
+    bool modemOnline = false;
+    //
+    bool simManagerAdded = false;
+    QString simManagerCardIdentifier;
+    QString simManagerServiceProviderName;
+    bool networkRegistrationAdded = false;
+    QString networkRegistrationStatus;
+    //
+    bool connectionManagerAdded = false;
+    bool connectionManagerAttached = false;
+    bool connectionManagerPowered = false;
+    bool connectionContextAdded = false;
+    bool connectionContextActive = false;
+    QString connectionContextAccessPointName;
+    QString connectionContextUsername;
+    QString connectionContextPassword;
+    Data() = default;
+    void debug();
+  };
+
   const ModemManagerData::Settings &_settings;
   QScopedPointer<QTimer> _timer;
-  const QVector<AutomatorScript *> _scripts;
-  AutomatorScript::Data _data;
-  DeferredCall _call;
+  const QMap<ScriptType, AutomatorScript *> _scripts;
+  Data _data;
   void debugScriptsRunning();
-  AutomatorScript *script(const AutomatorScript::Type type);
 };
 
 #endif // AUTOMATOR_H
