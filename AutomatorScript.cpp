@@ -49,7 +49,8 @@ State::Status AutomatorScript::processing(const State &state)
     if (iterator + 1 == _script.cend())
     {
       _iterator = _script.cbegin();
-      _scriptStatus = State::CallFinished;
+      _scriptStatus = State::_EMPTYTYPE_;
+      return State::CallFinished;
     }
   }
   else if (State(iterator->state.type(), State::CallError, iterator->state.value(), state.error()) == state)
