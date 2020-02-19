@@ -449,12 +449,12 @@ void Automator::processing(const State &state)
   {
     D("networkRegistrationDeregistered || connectionManagerDetached" << networkRegistrationDeregistered
                                                                      << connectionManagerDetached);
-    if (!_scripts.value(ModemOnlineDisable)->Signal())
+    if (!_scripts.value(ModemPoweredDisable)->Signal())
     {
       _timer->start();
       return;
     }
-    Q_EMIT Call(State::OfonoModemOnline, false);
+    Q_EMIT Call(State::OfonoModemPowered, false);
     return;
   }
 
