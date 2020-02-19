@@ -120,6 +120,41 @@ void Automator::processing(const State &state)
   int scriptsSignalCount = 0;
   int scriptsRunningCount = 0;
 
+  for (auto it = _scripts.keyValueBegin(); it != _scripts.keyValueEnd(); ++it)
+  {
+    switch ((*it).second->processing(state))
+    {
+      case State::Signal: ++scriptsSignalCount; break;
+      case State::CallStarted: ++scriptsRunningCount; break;
+      case State::CallFinished:
+      {
+        switch ((*it).first)
+        {
+          case ManagerModemAdded:
+          {
+            if (!_data.managerModemAdded && _data.modemPowered)
+              _data.restartModem = true;
+            _data.managerModemAdded = true;
+          }
+          break;
+          case SimManagerAdded: _data.simManagerAdded = true; break;
+          case NetworkRegistrationAdded: _data.networkRegistrationAdded = true; break;
+          case ConnectionManagerAdded: _data.connectionManagerAdded = true; break;
+          case ConnectionContextAdded: _data.connectionContextAdded = true; break;
+          default: break;
+        }
+      }
+      break;
+      case State::CallError:
+      {
+        C("SCRIPT ERROR:" << toString((*it).first) << (*it).second->error().message());
+        (*it).second->reset();
+      }
+      break;
+      default: break;
+    };
+  }
+
   if (State::Signal == state.status())
   {
     switch (state.type())
@@ -317,56 +352,12 @@ void Automator::processing(const State &state)
     }
   }
 
-  for (auto it = _scripts.keyValueBegin(); it != _scripts.keyValueEnd(); ++it)
-  {
-    switch ((*it).second->processing(state))
-    {
-      case State::Signal: ++scriptsSignalCount; break;
-      case State::CallStarted:
-      {
-        ++scriptsRunningCount;
-        D("SCRIPT STARTED:" << toString((*it).first));
-      }
-      break;
-      case State::CallFinished:
-      {
-        D("SCRIPT FINISHED:" << toString((*it).first));
-        switch ((*it).first)
-        {
-          case ManagerModemAdded:
-          {
-            if (!_data.managerModemAdded && _data.modemPowered)
-              _data.restartModem = true;
-            _data.managerModemAdded = true;
-          }
-          break;
-          case SimManagerAdded: _data.simManagerAdded = true; break;
-          case NetworkRegistrationAdded: _data.networkRegistrationAdded = true; break;
-          case ConnectionManagerAdded: _data.connectionManagerAdded = true; break;
-          case ConnectionContextAdded: _data.connectionContextAdded = true; break;
-          default: break;
-        }
-      }
-      break;
-      case State::CallError:
-      {
-        C("SCRIPT ERROR:" << toString((*it).first) << (*it).second->error().message());
-        (*it).second->reset();
-      }
-      break;
-      default: break;
-    };
-  }
-
   _data.debug();
   D(networkRegistrationDeregistered << connectionManagerDetached);
 
   // Autoconnection
-  if (!_data.managerModemAdded)
-    return;
-
   D(scriptsSignalCount << scriptsRunningCount);
-  if (scriptsRunningCount || scriptsSignalCount)
+  if (!_data.managerModemAdded || scriptsRunningCount || scriptsSignalCount)
     return;
 
   if (_data.restartModem)
