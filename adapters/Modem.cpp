@@ -112,7 +112,7 @@ void Modem::call(const State::Type type, const QVariant &value)
 
   Q_EMIT StateChanged(State(type, State::CallStarted, value));
   if (State::_EMPTYTYPE_ != _currentCallType)
-    Q_EMIT StateChanged(State(type, State::CallError, value, QDBusError(QDBusError::Other,"Running another call")));
+    Q_EMIT StateChanged(State(type, State::CallError, value, QDBusError(QDBusError::Other, "Running another call")));
 
   _currentCallType = type;
   _currentCallValue = value;

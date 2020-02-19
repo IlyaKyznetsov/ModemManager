@@ -101,7 +101,7 @@ void NetworkRegistration::call(const State::Type type)
 
   Q_EMIT StateChanged(State(type, State::CallStarted));
   if (State::_EMPTYTYPE_ != _currentCallType)
-    Q_EMIT StateChanged(State(type, State::CallError, "Running another call"));
+    Q_EMIT StateChanged(State(type, State::CallError, QDBusError(QDBusError::Other, "Running another call")));
 
   _currentCallType = type;
   switch (type)

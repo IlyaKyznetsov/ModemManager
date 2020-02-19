@@ -17,6 +17,17 @@ QDBusError AutomatorScript::error() const
   return _scriptError;
 }
 
+bool AutomatorScript::Signal()
+{
+  DF() << _scriptStatus;
+  if (_scriptStatus == State::Signal || State::_EMPTYSTATUS_ == _scriptStatus || State::CallFinished == _scriptStatus)
+  {
+    _scriptStatus = State::Signal;
+    return true;
+  }
+  return false;
+}
+
 State::Status AutomatorScript::processing(const State &state)
 {
   if (_iterator == _script.cend())

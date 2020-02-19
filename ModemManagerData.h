@@ -28,11 +28,11 @@ struct Settings
     DBusTimeouts(const int &Manager, const int &Modem, const int &SimManager, const int &NetworkRegistration,
                  const int &ConnectionManager, const int &ConnectionContext);
   };
-  struct ModemManagerTimeouts
+  struct AutomatorTimeouts
   {
-    int deferredCall;
-    int waitState;
-    ModemManagerTimeouts(const int &DeferredCall, const int &WaitState);
+    int connectionManagerAttached;
+    int errorRepeat;
+    AutomatorTimeouts(const int &ConnectionManagerAttached, const int &ErrorRepeat);
   };
   struct Provider
   {
@@ -42,13 +42,13 @@ struct Settings
     Provider(const QVariant &AccessPointName = QVariant(), const QVariant &Username = QVariant(),
              const QVariant &Password = QVariant());
   };
-  Settings(const Settings::DBusTimeouts &DBusTimeouts, const Settings::ModemManagerTimeouts &ModemManagerTimeouts);
+  Settings(const Settings::DBusTimeouts &DBusTimeouts, const Settings::AutomatorTimeouts &AutomatorTimeouts);
   bool addProvider(const QString &name, const Settings::Provider &settings);
   Provider providerSettings(const QString &provider) const;
   void debug() const;
 
   const DBusTimeouts dBusTimeouts;
-  const ModemManagerTimeouts modemManagerimeouts;
+  const AutomatorTimeouts automatorTimeouts;
   QMap<QString, Provider> providers;
 };
 

@@ -70,18 +70,16 @@ private:
     bool modemLockdown = false;
     bool modemPowered = false;
     bool modemOnline = false;
-    //
     bool simManagerAdded = false;
-    QString simManagerCardIdentifier;
-    QString simManagerServiceProviderName;
     bool networkRegistrationAdded = false;
-    QString networkRegistrationStatus;
-    //
     bool connectionManagerAdded = false;
     bool connectionManagerAttached = false;
     bool connectionManagerPowered = false;
     bool connectionContextAdded = false;
     bool connectionContextActive = false;
+    QString simManagerCardIdentifier;
+    QString simManagerServiceProviderName;
+    QString networkRegistrationStatus;
     QString connectionContextAccessPointName;
     QString connectionContextUsername;
     QString connectionContextPassword;

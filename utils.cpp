@@ -31,9 +31,9 @@ ModemManagerData::Settings loadSettings(const QString &settingsPath)
       item.value("ConnectionContext").toInt());
 
   item = root.value("AutoConnectionTimeouts").toObject();
-  ModemManagerData::Settings::ModemManagerTimeouts modemManagerTimeouts(item.value("DeferredCall").toInt(5000),
-                                                                        item.value("WaitState").toInt(5000));
-  ModemManagerData::Settings settings(dBusTimeouts, modemManagerTimeouts);
+  ModemManagerData::Settings::AutomatorTimeouts automatorTimeouts(item.value("ConnectionManagerAttached").toInt(),
+                                                                  item.value("ErrorRepeat").toInt());
+  ModemManagerData::Settings settings(dBusTimeouts, automatorTimeouts);
   QJsonObject providers = root.value("Providers").toObject();
   for (const QString &name : providers.keys())
   {

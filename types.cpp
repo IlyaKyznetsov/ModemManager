@@ -23,7 +23,7 @@ State::State(Type type, Status status, const QVariant &value, const QDBusError &
 {
 }
 
-State::OfonoErrorType State::errorType(const QDBusError &error) const
+State::OfonoErrorType State::errorType(const QDBusError &error)
 {
   switch (error.type())
   {
@@ -43,7 +43,8 @@ State::OfonoErrorType State::errorType(const QDBusError &error) const
           {service + ".Error.NotAllowed", OfonoErrorType::NotAllowed},
           {service + ".Error.NotAttached", OfonoErrorType::NotAttached},
           {service + ".Error.AttachInProgress", OfonoErrorType::AttachInProgress}};
-      return codes.value(error.name(), OfonoErrorType::DBusError);
+      return codes.value(error.name(), (error.message() == "Running another call") ? OfonoErrorType::RunningAnotherCall
+                                                                                   : OfonoErrorType::DBusError);
     }
     default: return OfonoErrorType::DBusError;
   }

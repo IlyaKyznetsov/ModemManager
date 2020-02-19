@@ -9,7 +9,6 @@ class AutomatorScript : public QObject
   Q_OBJECT
 public:
   static const State emptyState;
-
   struct Item
   {
     typedef QVector<Item>::const_iterator Iterator;
@@ -24,6 +23,7 @@ public:
   ~AutomatorScript() = default;
   State::Status status() const;
   QDBusError error() const;
+  bool Signal();
   State::Status processing(const State &state);
   void reset();
   operator QString() const;

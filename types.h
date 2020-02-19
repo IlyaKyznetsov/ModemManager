@@ -92,6 +92,7 @@ public:
   enum OfonoErrorType
   {
     NoError = 0,
+    RunningAnotherCall,
     DBusError,
     InProgress,
     NotImplemented,
@@ -115,7 +116,7 @@ public:
   Status status() const { return _status; }
   QVariant value() const { return _value; }
   QDBusError error() const { return _error; }
-  OfonoErrorType errorType(const QDBusError &error) const;
+  static OfonoErrorType errorType(const QDBusError &error);
   bool operator==(const State &state) const;
   bool operator!=(const State &state) const { return !this->operator==(state); }
   operator QString() const;
