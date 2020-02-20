@@ -12,7 +12,6 @@ class SimManager;
 class NetworkRegistration;
 class ConnectionManager;
 class ConnectionContext;
-#include <Automator.h>
 
 class ModemManager : public QObject
 {
@@ -37,17 +36,31 @@ private:
   NetworkRegistration *_networkRegistration;
   ConnectionManager *_connectionManager;
   ConnectionContext *_connectionContext;
-  //  DeferredCall *_deferredCall;
   ModemManagerData::OfonoState _ofonoState;
-  Automator *_automator;
+  struct AutomatorStates
+  {
+    bool modemInitialized;
+    bool needPowerOff;
+    State::Status modemLockdownStatus;
+    State::Status modemPoweredStatus;
+    State::Status modemOnlineStatus;
+    State::Status connectionContextAccessPointNameStatus;
+    State::Status connectionContextUsernameStatus;
+    State::Status connectionContextPasswordStatus;
+    State::Status connectionContextActiveStatus;
+    AutomatorStates();
+    void reset();
+  } _automator;
+
 
   //  void _signalOfonoManager(const State &state);
-  void _signalManager(const State &state);
-  void _signalModem(const State &state);
-  void _signalSimManager(const State &state);
-  void _signalNetworkRegistration(const State &state);
-  void _signalConnectionManager(const State &state);
-  void _signalConnectionContext(const State &state);
+  inline void _signalManager(const State &state);
+  inline void _signalModem(const State &state);
+  inline void _signalSimManager(const State &state);
+  inline void _signalNetworkRegistration(const State &state);
+  inline void _signalConnectionManager(const State &state);
+  inline void _signalConnectionContext(const State &state);
+  inline void _automatorProcessing(const State &state);
 
 private Q_SLOTS:
   void debugOfonoState(const ModemManagerData::OfonoState &state);
