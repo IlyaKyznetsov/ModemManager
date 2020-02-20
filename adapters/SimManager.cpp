@@ -17,13 +17,13 @@ bool SimManager::isValid() const
 
 void SimManager::reset(const QString &path)
 {
-  Q_EMIT StateChanged(State(State::Reset, State::CallStarted));
+  Q_EMIT StateChanged(State(State::AdapterSimManagerReset, State::CallStarted));
 
   if (path.isEmpty())
   {
     delete _interface;
     _interface = nullptr;
-    Q_EMIT StateChanged(State(State::Reset, State::CallFinished));
+    Q_EMIT StateChanged(State(State::AdapterSimManagerReset, State::CallFinished));
     return;
   }
 
@@ -32,7 +32,7 @@ void SimManager::reset(const QString &path)
   if (!interface->isValid())
   {
     delete interface;
-    Q_EMIT StateChanged(State(State::Reset, State::CallFinished));
+    Q_EMIT StateChanged(State(State::AdapterSimManagerReset, State::CallError));
     return;
   }
 
@@ -68,5 +68,5 @@ void SimManager::reset(const QString &path)
               Q_EMIT StateChanged(State(State::OfonoSimManagerGetProperties, State::CallFinished));
             }
           });
-  Q_EMIT StateChanged(State(State::Reset, State::CallFinished));
+  Q_EMIT StateChanged(State(State::AdapterSimManagerReset, State::CallFinished));
 }

@@ -17,8 +17,8 @@ void TestGui::OfonoStateChanged(const ModemManagerData::OfonoState &state)
   out->clear();
   out->append("------------ OfonoState ------------");
   out->append("Ofono connected: " + toString(state.isOfonoConnected));
-  if (!state.isOfonoConnected)
-    return;
+  //  if (!state.isOfonoConnected)
+  //    return;
 
   if (state.modem.isNull())
     return;

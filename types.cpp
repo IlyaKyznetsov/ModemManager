@@ -23,56 +23,16 @@ State::State(Type type, Status status, const QVariant &value, const QDBusError &
 {
 }
 
-State::OfonoErrorType State::errorType(const QDBusError &error)
+QString State::toString(State::Type type)
 {
-  switch (error.type())
-  {
-    case QDBusError::NoError: return OfonoErrorType::NoError;
-    case QDBusError::Other:
-    {
-      const QString service = "org.ofono";
-      const QMap<QString, OfonoErrorType> codes{
-          {service + ".Error.InProgress", OfonoErrorType::InProgress},
-          {service + ".Error.NotImplemented", OfonoErrorType::NotImplemented},
-          {service + ".Error.InvalidArguments", OfonoErrorType::InvalidArguments},
-          {service + ".Error.NotAvailable", OfonoErrorType::NotAvailable},
-          {service + ".Error.AccessDenied", OfonoErrorType::AccessDenied},
-          {service + ".Error.Failed", OfonoErrorType::Failed},
-          {service + ".Error.InvalidFormat", OfonoErrorType::InvalidFormat},
-          {service + ".Error.NotFound", OfonoErrorType::NotFound},
-          {service + ".Error.NotAllowed", OfonoErrorType::NotAllowed},
-          {service + ".Error.NotAttached", OfonoErrorType::NotAttached},
-          {service + ".Error.AttachInProgress", OfonoErrorType::AttachInProgress}};
-      return codes.value(error.name(), (error.message() == "Running another call") ? OfonoErrorType::RunningAnotherCall
-                                                                                   : OfonoErrorType::DBusError);
-    }
-    default: return OfonoErrorType::DBusError;
-  }
-}
-
-bool State::operator==(const State &state) const
-{
-  if (!(_type == state._type && _status == state._status))
-    return false;
-
-  if (true == _value.isValid() && true == state._value.isValid())
-    return _value == state._value;
-
-  return true;
-}
-
-State::operator QString() const
-{
-  const QMap<Status, QString> statuses = {{Status::Signal, "Signal"},
-                                          {Status::CallStarted, "CallStarted"},
-                                          {Status::CallFinished, "CallFinished"},
-                                          {Status::CallError, "CallError"}};
-
-  const QMap<Type, QString> types = {
+  const QMap<Type, QString> map = {
       {Type::_EMPTYTYPE_, "_EMPTYTYPE_"},
-      {Type::Reset, "Reset"},
-      {Type::OfonoServiceRegistered, "OfonoServiceRegistered"},
-      {Type::OfonoServiceUnregistered, "OfonoServiceUnregistered"},
+      {AdapterManagerReset, "AdapterManagerReset"},
+      {AdapterModemReset, "AdapterModemReset"},
+      {AdapterSimManagerReset, "AdapterSimManagerReset"},
+      {AdapterNetworkRegistrationReset, "AdapterNetworkRegistrationReset"},
+      {AdapterConnectionManagerReset, "AdapterConnectionManagerReset"},
+      {AdapterConnectionContextReset, "AdapterConnectionContextReset"},
       {Type::OfonoManagerModemAdded, "OfonoManagerModemAdded"},
       {Type::OfonoManagerModemRemoved, "OfonoManagerModemRemoved"},
       {Type::OfonoManagerGetModems, "OfonoGetModems"},
@@ -125,14 +85,70 @@ State::operator QString() const
       {Type::OfonoConnectionContextAddress, "OfonoConnectionContextAddress"},
       {Type::OfonoConnectionContextNetmask, "OfonoConnectionContextNetmask"},
   };
+  const QString msg = map.value(type);
+  if (msg.isEmpty())
+    throw astr_global::Exception("Unknown State::Type: " + QString::number(type));
+  return msg;
+}
 
-  QString type = types.value(_type);
-  if (type.isEmpty())
-    throw astr_global::Exception("Bad State::Type: " + QString::number(_type));
+QString State::toString(State::Status status)
+{
+  const QMap<Status, QString> map = {{Status::_EMPTYSTATUS_, "_EMPTYSTATUS_"},
+                                     {Status::Signal, "Signal"},
+                                     {Status::CallStarted, "CallStarted"},
+                                     {Status::CallFinished, "CallFinished"},
+                                     {Status::CallError, "CallError"}};
+  const QString msg = map.value(status);
+  if (msg.isEmpty())
+    throw astr_global::Exception("Unknown State::Status: " + QString::number(status));
+  return msg;
+}
 
-  QString err;
-  if (errorType(error()) != QDBusError::NoError)
-    err += "|error=" + error().name() + " : " + error().message();
-  return "(State::Type::" + type + "|State::Status::" + statuses.value(_status, "Invalid") +
-         "|value=" + value().toString() + err + ")";
+State::OfonoErrorType State::errorType(const QDBusError &error)
+{
+  switch (error.type())
+  {
+    case QDBusError::NoError: return OfonoErrorType::NoError;
+    case QDBusError::Other:
+    {
+      const QString service = "org.ofono";
+      const QMap<QString, OfonoErrorType> codes{
+          {service + ".Error.InProgress", OfonoErrorType::InProgress},
+          {service + ".Error.NotImplemented", OfonoErrorType::NotImplemented},
+          {service + ".Error.InvalidArguments", OfonoErrorType::InvalidArguments},
+          {service + ".Error.NotAvailable", OfonoErrorType::NotAvailable},
+          {service + ".Error.AccessDenied", OfonoErrorType::AccessDenied},
+          {service + ".Error.Failed", OfonoErrorType::Failed},
+          {service + ".Error.InvalidFormat", OfonoErrorType::InvalidFormat},
+          {service + ".Error.NotFound", OfonoErrorType::NotFound},
+          {service + ".Error.NotAllowed", OfonoErrorType::NotAllowed},
+          {service + ".Error.NotAttached", OfonoErrorType::NotAttached},
+          {service + ".Error.AttachInProgress", OfonoErrorType::AttachInProgress}};
+      return codes.value(error.name(), (error.message() == "Running another call") ? OfonoErrorType::RunningAnotherCall
+                                                                                   : OfonoErrorType::DBusError);
+    }
+    default: return OfonoErrorType::DBusError;
+  }
+}
+
+bool State::operator==(const State &state) const
+{
+  if (!(_type == state._type && _status == state._status))
+    return false;
+
+  if (true == _value.isValid() && true == state._value.isValid())
+    return _value == state._value;
+
+  return true;
+}
+
+State::operator QString() const
+{
+  if (errorType(error()) == State::OfonoErrorType::NoError)
+  {
+    return "(State::Type::" + toString(_type) + "|State::Status::" + toString(_status) +
+           "|value=" + value().toString() + ")";
+  }
+  return "(State::Type::" + toString(_type) + "|State::Status::" + toString(_status) + "|value=" + value().toString() +
+         "|error=" + error().name() + " : " + error().message();
 }

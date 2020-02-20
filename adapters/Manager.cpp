@@ -13,7 +13,7 @@ bool Manager::isValid() const
 
 void Manager::reset(const QString &service)
 {
-  Q_EMIT StateChanged(State(State::Reset, State::CallStarted));
+  Q_EMIT StateChanged(State(State::AdapterManagerReset, State::CallStarted));
 
   _modemsPath.clear();
 
@@ -21,7 +21,7 @@ void Manager::reset(const QString &service)
   {
     delete _interface;
     _interface = nullptr;
-    Q_EMIT StateChanged(State(State::Reset, State::CallFinished));
+    Q_EMIT StateChanged(State(State::AdapterManagerReset, State::CallFinished));
     return;
   }
 
@@ -29,7 +29,7 @@ void Manager::reset(const QString &service)
   if (!interface->isValid())
   {
     delete interface;
-    Q_EMIT StateChanged(State(State::Reset, State::CallFinished));
+    Q_EMIT StateChanged(State(State::AdapterManagerReset, State::CallError));
     return;
   }
   _interface = interface;
@@ -74,5 +74,5 @@ void Manager::reset(const QString &service)
                 Q_EMIT StateChanged(State(State::OfonoManagerModemAdded, State::Signal, QVariant(_modemsPath.last())));
             }
           });
-  Q_EMIT StateChanged(State(State::Reset, State::CallFinished));
+  Q_EMIT StateChanged(State(State::AdapterManagerReset, State::CallFinished));
 }

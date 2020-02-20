@@ -21,77 +21,47 @@ public:
   void reset();
 
 private:
-  enum ScriptType
-  {
-    _EMPTYTYPE_ = 0,
-    ManagerModemAdded,
-    ModemLockdownDisable,
-    ModemLockdownEnable,
-    ModemPoweredDisable,
-    ModemPoweredEnable,
-    ModemOnlineDisable,
-    ModemOnlineEnable,
-    SimManagerAdded,
-    NetworkRegistrationAdded,
-    ConnectionManagerAdded,
-    ConnectionContextAdded,
-    ConnectionContextAccessPointName,
-    ConnectionContextUsername,
-    ConnectionContextPassword,
-    ConnectionContextActiveDisable,
-    ConnectionContextActiveEnable
-  };
-  QString toString(ScriptType type)
-  {
-    QMap<ScriptType, QString> types{{_EMPTYTYPE_, "_EMPTYTYPE_"},
-                                    {ManagerModemAdded, "ManagerModemAdded"},
-                                    {ModemLockdownDisable, "ModemLockdownDisable"},
-                                    {ModemLockdownEnable, "ModemLockdownEnable"},
-                                    {ModemPoweredDisable, "ModemPoweredDisable"},
-                                    {ModemPoweredEnable, "ModemPoweredEnable"},
-                                    {ModemOnlineDisable, "ModemOnlineDisable"},
-                                    {ModemOnlineEnable, "ModemOnlineEnable"},
-                                    {SimManagerAdded, "SimManagerAdded"},
-                                    {NetworkRegistrationAdded, "NetworkRegistrationAdded"},
-                                    {ConnectionManagerAdded, "ConnectionManagerAdded"},
-                                    {ConnectionContextAdded, "ConnectionContextAdded"},
-                                    {ConnectionContextAccessPointName, "ConnectionContextAccessPointName"},
-                                    {ConnectionContextUsername, "ConnectionContextUsername"},
-                                    {ConnectionContextPassword, "ConnectionContextPassword"},
-                                    {ConnectionContextActiveDisable, "ConnectionContextActiveDisable"},
-                                    {ConnectionContextActiveEnable, "ConnectionContextActiveEnable"}};
-    return types.value(type);
-  }
-
   struct Data
   {
-    bool restartModem = false;
-    bool managerModemExist = false;
+    bool needPowerOff = false;
     bool modemLockdown = false;
     bool modemPowered = false;
     bool modemOnline = false;
-    bool simManagerAdded = false;
-    bool networkRegistrationAdded = false;
-    bool connectionManagerAdded = false;
+
+    bool simManagerInitialized = false;
+    bool networkRegistrationInitialized = false;
+    bool connectionManagerInitialized = false;
+    bool connectionContextInitialized = false;
+
     bool connectionManagerAttached = false;
     bool connectionManagerPowered = false;
-    bool connectionContextAdded = false;
     bool connectionContextActive = false;
     QString simManagerCardIdentifier;
-    QString simManagerServiceProviderName;
+    QString simManagerProviderName;
     QString networkRegistrationStatus;
     QString connectionContextAccessPointName;
     QString connectionContextUsername;
     QString connectionContextPassword;
+    //
+    State::Status modemLockdownStatus = State::_EMPTYSTATUS_;
+    State::Status modemPoweredStatus = State::_EMPTYSTATUS_;
+    State::Status modemOnlineStatus = State::_EMPTYSTATUS_;
+    State::Status connectionContextAccessPointNameStatus = State::_EMPTYSTATUS_;
+    State::Status connectionContextUsernameStatus = State::_EMPTYSTATUS_;
+    State::Status connectionContextPasswordStatus = State::_EMPTYSTATUS_;
+    State::Status connectionContextActiveStatus = State::_EMPTYSTATUS_;
+    //
     Data() = default;
+    inline void resetConnectionContext();
+    inline void resetConnectionManager();
+    inline void resetNetworkRegistration();
+    inline void resetSimManager();
+    inline void resetModem();
     void debug();
   };
 
   const ModemManagerData::Settings &_settings;
-  QScopedPointer<QTimer> _timer;
-  const QMap<ScriptType, AutomatorScript *> _scripts;
   Data _data;
-  void debugScriptsRunning();
 };
 
 #endif // AUTOMATOR_H

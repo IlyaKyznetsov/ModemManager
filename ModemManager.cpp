@@ -1,20 +1,21 @@
 #include "ModemManager.h"
 #include "Global.h"
 
+#include "Automator.h"
 #include "adapters/ConnectionContext.h"
 #include "adapters/ConnectionManager.h"
 #include "adapters/Manager.h"
 #include "adapters/Modem.h"
 #include "adapters/NetworkRegistration.h"
-#include "adapters/OfonoManager.h"
 #include "adapters/SimManager.h"
-
-#include "Automator.h"
+#include "adapters/dbustypes.h"
+#include <QDBusConnection>
+#include <QDBusConnectionInterface>
+#include <QDBusServiceWatcher>
 
 ModemManager::ModemManager(const ModemManagerData::Settings &settings, QObject *parent)
     : QObject(parent),
       _settings(settings),
-      _ofonoManager(new OfonoManager(this)),
       _manager(new Manager(_settings.dBusTimeouts.manager, this)),
       _modem(new Modem(_settings.dBusTimeouts.modem, this)),
       _simManager(new SimManager(_settings.dBusTimeouts.simManager, this)),
@@ -24,10 +25,34 @@ ModemManager::ModemManager(const ModemManagerData::Settings &settings, QObject *
       _automator(new Automator(_settings, this))
 {
   DF();
+  registerOfonoObjectPathProperties();
+  QDBusConnection bus(QDBusConnection::systemBus());
+  _watcher = new QDBusServiceWatcher(
+      Ofono::SERVICE, bus, QDBusServiceWatcher::WatchForRegistration | QDBusServiceWatcher::WatchForUnregistration,
+      this);
+  connect(_watcher, &QDBusServiceWatcher::serviceRegistered, [this]() {
+    _ofonoState.isOfonoConnected = true;
+    _automator->reset();
+    _manager->reset(Ofono::SERVICE);
+  });
+  connect(_watcher, &QDBusServiceWatcher::serviceUnregistered, [this]() {
+    _automator->reset();
+    _connectionContext->reset();
+    _connectionManager->reset();
+    _networkRegistration->reset();
+    _simManager->reset();
+    _modem->reset();
+    _manager->reset();
+    _ofonoState.isOfonoConnected = false;
+    _ofonoState.connectionContext.reset();
+    _ofonoState.connectionManager.reset();
+    _ofonoState.networkRegistration.reset();
+    _ofonoState.simManager.reset();
+    _ofonoState.modem.reset();
+  });
+
   _settings.debug();
   connect(_automator, &Automator::Call, this, &ModemManager::call);
-
-  connect(_ofonoManager, &OfonoManager::StateChanged, this, &ModemManager::onStateChanged);
   connect(_manager, &Manager::StateChanged, this, &ModemManager::onStateChanged);
   connect(_modem, &Modem::StateChanged, this, &ModemManager::onStateChanged);
   connect(_simManager, &SimManager::StateChanged, this, &ModemManager::onStateChanged);
@@ -35,13 +60,17 @@ ModemManager::ModemManager(const ModemManagerData::Settings &settings, QObject *
   connect(_connectionManager, &ConnectionManager::StateChanged, this, &ModemManager::onStateChanged);
   connect(_connectionContext, &ConnectionContext::StateChanged, this, &ModemManager::onStateChanged);
 
-  _ofonoManager->reset(Ofono::SERVICE);
+  if (bus.interface()->isServiceRegistered(Ofono::SERVICE))
+  {
+    _automator->reset();
+    _manager->reset(Ofono::SERVICE);
+  }
 }
 
 void ModemManager::onStateChanged(const State &state)
 {
-  //  static ulong n = 0;
-  //  D("--- STATE --- " << ++n << state);
+  static ulong n = 0;
+  D("--- STATE --- " << ++n << state);
 
   QObject *sender_ptr = sender();
 
@@ -49,9 +78,7 @@ void ModemManager::onStateChanged(const State &state)
 
   if (State::Signal == state.status())
   {
-    if (_ofonoManager == sender_ptr)
-      _signalOfonoManager(state);
-    else if (_manager == sender_ptr)
+    if (_manager == sender_ptr)
       _signalManager(state);
     else if (_modem == sender_ptr)
       _signalModem(state);
@@ -64,7 +91,6 @@ void ModemManager::onStateChanged(const State &state)
     else if (_connectionContext == sender_ptr)
       _signalConnectionContext(state);
   }
-
   _automator->processing(state);
 
   //_automationHandler(sender_ptr, state);
@@ -141,39 +167,6 @@ void ModemManager::call(const State::Type callType, const QVariant &value)
   }
 }
 
-void ModemManager::_signalOfonoManager(const State &state)
-{
-  // DF() << state;
-  switch (state.type())
-  {
-    case State::OfonoServiceRegistered:
-    {
-      _ofonoState.isOfonoConnected = true;
-      _manager->reset(Ofono::SERVICE);
-    }
-    break;
-    case State::OfonoServiceUnregistered:
-    {
-      _connectionContext->reset();
-      _connectionManager->reset();
-      _networkRegistration->reset();
-      _simManager->reset();
-      _modem->reset();
-      _manager->reset();
-
-      _ofonoState.isOfonoConnected = false;
-      _ofonoState.connectionContext.reset();
-      _ofonoState.connectionManager.reset();
-      _ofonoState.networkRegistration.reset();
-      _ofonoState.simManager.reset();
-      _ofonoState.modem.reset();
-    }
-    break;
-    default: return;
-  }
-  Q_EMIT OfonoStateChanged(_ofonoState);
-}
-
 void ModemManager::_signalManager(const State &state)
 {
   // DF() << state;
@@ -181,6 +174,7 @@ void ModemManager::_signalManager(const State &state)
   {
     case State::OfonoManagerModemAdded:
     {
+      _automator->reset();
       _ofonoState.modem.reset(new ModemManagerData::OfonoState::Modem());
       _modem->reset(state.value().toString());
     }
@@ -190,6 +184,7 @@ void ModemManager::_signalManager(const State &state)
       if (_modem->path() != state.value().toString())
         return;
 
+      _automator->reset();
       _connectionContext->reset();
       _connectionManager->reset();
       _networkRegistration->reset();

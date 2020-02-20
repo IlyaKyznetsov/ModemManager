@@ -28,8 +28,7 @@ QString Modem::path() const
 
 void Modem::reset(const QString &path)
 {
-  DF() << path;
-  Q_EMIT StateChanged(State(State::Reset, State::CallStarted));
+  Q_EMIT StateChanged(State(State::AdapterModemReset, State::CallStarted));
 
   _currentCallType = State::_EMPTYTYPE_;
   _modemInterfaces.clear();
@@ -38,7 +37,7 @@ void Modem::reset(const QString &path)
   {
     delete _interface;
     _interface = nullptr;
-    Q_EMIT StateChanged(State(State::Reset, State::CallFinished));
+    Q_EMIT StateChanged(State(State::AdapterModemReset, State::CallFinished));
     return;
   }
 
@@ -46,7 +45,7 @@ void Modem::reset(const QString &path)
   if (!interface->isValid())
   {
     delete interface;
-    Q_EMIT StateChanged(State(State::Reset, State::CallFinished));
+    Q_EMIT StateChanged(State(State::AdapterModemReset, State::CallError));
     return;
   }
 
@@ -97,13 +96,11 @@ void Modem::reset(const QString &path)
               Q_EMIT StateChanged(State(State::OfonoModemGetProperties, State::CallFinished));
             }
           });
-  Q_EMIT StateChanged(State(State::State::Reset, State::CallFinished));
+  Q_EMIT StateChanged(State(State::State::AdapterModemReset, State::CallFinished));
 }
 
 void Modem::call(const State::Type type, const QVariant &value)
 {
-  DF() << type << value;
-
   QString name = TypeToString.value(type);
   if (name.isEmpty())
   {
@@ -112,7 +109,11 @@ void Modem::call(const State::Type type, const QVariant &value)
 
   Q_EMIT StateChanged(State(type, State::CallStarted, value));
   if (State::_EMPTYTYPE_ != _currentCallType)
-    Q_EMIT StateChanged(State(type, State::CallError, value, QDBusError(QDBusError::Other, "Running another call")));
+  {
+    const QString msg("Already running: (" + State::toString(_currentCallType) + "|" + State::toString(type));
+    C(msg);
+    throw astr_global::Exception(msg);
+  }
 
   _currentCallType = type;
   _currentCallValue = value;

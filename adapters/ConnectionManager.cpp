@@ -32,7 +32,7 @@ int ConnectionManager::contextsCount() const
 
 void ConnectionManager::reset(const QString &path)
 {
-  Q_EMIT StateChanged(State(State::Reset, State::CallStarted));
+  Q_EMIT StateChanged(State(State::AdapterConnectionManagerReset, State::CallStarted));
 
   _currentCallType = State::_EMPTYTYPE_;
 
@@ -40,7 +40,7 @@ void ConnectionManager::reset(const QString &path)
   {
     delete _interface;
     _interface = nullptr;
-    Q_EMIT StateChanged(State(State::Reset, State::CallFinished));
+    Q_EMIT StateChanged(State(State::AdapterConnectionManagerReset, State::CallFinished));
     return;
   }
 
@@ -49,7 +49,7 @@ void ConnectionManager::reset(const QString &path)
   if (!interface->isValid())
   {
     delete interface;
-    Q_EMIT StateChanged(State(State::Reset, State::CallFinished));
+    Q_EMIT StateChanged(State(State::AdapterConnectionManagerReset, State::CallError));
     return;
   }
 
@@ -85,7 +85,7 @@ void ConnectionManager::reset(const QString &path)
 
   _getProperties();
 
-  Q_EMIT StateChanged(State(State::State::Reset, State::CallFinished));
+  Q_EMIT StateChanged(State(State::State::AdapterConnectionManagerReset, State::CallFinished));
 }
 
 void ConnectionManager::_getProperties()
@@ -151,7 +151,11 @@ void ConnectionManager::call(const State::Type type, const QVariant &value)
 
   Q_EMIT StateChanged(State(type, State::CallStarted, value));
   if (State::_EMPTYTYPE_ != _currentCallType)
-    Q_EMIT StateChanged(State(type, State::CallError, value, QDBusError(QDBusError::Other, "Running another call")));
+  {
+    const QString msg("Already running: (" + State::toString(_currentCallType) + "|" + State::toString(type));
+    C(msg);
+    throw astr_global::Exception(msg);
+  }
 
   switch (type)
   {

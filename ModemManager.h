@@ -5,14 +5,14 @@
 #include "types.h"
 #include <QObject>
 
-class OfonoManager;
+class QDBusServiceWatcher;
 class Manager;
 class Modem;
 class SimManager;
 class NetworkRegistration;
 class ConnectionManager;
 class ConnectionContext;
-class Automator;
+#include <Automator.h>
 
 class ModemManager : public QObject
 {
@@ -30,7 +30,7 @@ private Q_SLOTS:
 
 private:
   const ModemManagerData::Settings _settings;
-  OfonoManager *_ofonoManager;
+  QDBusServiceWatcher *_watcher;
   Manager *_manager;
   Modem *_modem;
   SimManager *_simManager;
@@ -39,9 +39,9 @@ private:
   ConnectionContext *_connectionContext;
   //  DeferredCall *_deferredCall;
   ModemManagerData::OfonoState _ofonoState;
-
   Automator *_automator;
-  void _signalOfonoManager(const State &state);
+
+  //  void _signalOfonoManager(const State &state);
   void _signalManager(const State &state);
   void _signalModem(const State &state);
   void _signalSimManager(const State &state);

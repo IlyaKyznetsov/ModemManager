@@ -17,10 +17,12 @@ public:
   {
     _EMPTYTYPE_ = 0, // for default constructor only
     // Local,
-    Reset,
-    // Ofono Service
-    OfonoServiceRegistered,
-    OfonoServiceUnregistered,
+    AdapterManagerReset,
+    AdapterModemReset,
+    AdapterSimManagerReset,
+    AdapterNetworkRegistrationReset,
+    AdapterConnectionManagerReset,
+    AdapterConnectionContextReset,
     // Ofono Manager
     OfonoManagerModemAdded,
     OfonoManagerModemRemoved,
@@ -79,6 +81,7 @@ public:
     OfonoConnectionContextAddress,   // [readonly, optional]
     OfonoConnectionContextNetmask    // [readonly, optional]
   };
+  static QString toString(State::Type type);
 
   enum Status
   {
@@ -88,6 +91,7 @@ public:
     CallFinished,
     CallError
   };
+  static QString toString(State::Status status);
 
   enum OfonoErrorType
   {
@@ -106,6 +110,7 @@ public:
     NotAttached,
     AttachInProgress
   };
+  static OfonoErrorType errorType(const QDBusError &error);
 
   State();
   State(Type type, Status status);
@@ -116,7 +121,6 @@ public:
   Status status() const { return _status; }
   QVariant value() const { return _value; }
   QDBusError error() const { return _error; }
-  static OfonoErrorType errorType(const QDBusError &error);
   bool operator==(const State &state) const;
   bool operator!=(const State &state) const { return !this->operator==(state); }
   operator QString() const;

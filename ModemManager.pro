@@ -88,7 +88,6 @@ SOURCES += \
         adapters/SimManager.cpp \
         adapters/dbustypes.cpp \
         adapters/Manager.cpp \
-        adapters/OfonoManager.cpp \
         main.cpp \
         types.cpp \
         utils.cpp
@@ -109,7 +108,6 @@ HEADERS += \
     adapters/SimManager.h \
     adapters/dbustypes.h \
     adapters/Manager.h \
-    adapters/OfonoManager.h \
     types.h \
     utils.h
 

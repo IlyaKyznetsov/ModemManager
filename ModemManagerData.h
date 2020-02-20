@@ -109,7 +109,6 @@ struct OfonoState
   QSharedPointer<ConnectionManager> connectionManager;
   QSharedPointer<ConnectionContext> connectionContext;
 };
-
 } // namespace ModemManagerData
 
 #include <qmetatype.h>
