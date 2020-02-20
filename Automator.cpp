@@ -96,7 +96,7 @@ Automator::Automator(const ModemManagerData::Settings &settings, QObject *parent
 {
   _timer->setSingleShot(true);
   _timer->setInterval(1000);
-  connect(_timer.data(), &QTimer::timeout, [this]() { processing(State()); });
+  //  connect(_timer.data(), &QTimer::timeout, [this]() { processing(State()); });
 }
 
 Automator::~Automator()
@@ -110,16 +110,11 @@ Automator::~Automator()
 
 void Automator::processing(const State &state)
 {
-  static long n = 0;
-  D("|STATE|" << n++ << ":" << state);
-  if (_timer->isActive())
-    _timer->stop();
-
   bool connectionManagerDetached = false;
   bool networkRegistrationDeregistered = false;
   int scriptsSignalCount = 0;
   int scriptsRunningCount = 0;
-
+  int scriptsErrorCount = 0;
   for (auto it = _scripts.keyValueBegin(); it != _scripts.keyValueEnd(); ++it)
   {
     switch ((*it).second->processing(state))
@@ -132,9 +127,9 @@ void Automator::processing(const State &state)
         {
           case ManagerModemAdded:
           {
-            if (!_data.managerModemAdded && _data.modemPowered)
+            if (_data.modemPowered)
               _data.restartModem = true;
-            _data.managerModemAdded = true;
+            _data.managerModemExist = true;
           }
           break;
           case SimManagerAdded: _data.simManagerAdded = true; break;
@@ -147,49 +142,46 @@ void Automator::processing(const State &state)
       break;
       case State::CallError:
       {
-        C("SCRIPT ERROR:" << toString((*it).first) << (*it).second->error().message());
+        ++scriptsErrorCount;
+        QDBusError error = (*it).second->error();
+        W("+++ ScriptError:" << toString((*it).first) << error.name() << error.message());
         (*it).second->reset();
       }
       break;
       default: break;
     };
   }
+  //  debugScriptsRunning();
 
-  if (State::Signal == state.status())
+  switch (state.status())
   {
-    switch (state.type())
+    case State::Signal:
     {
-      case State::OfonoModemLockdown:
+      switch (state.type())
       {
-        _data.modemLockdown = state.value().toBool();
-        if (_data.modemLockdown)
+        case State::OfonoServiceUnregistered:
+        case State::OfonoManagerModemRemoved:
         {
+          _scripts.value(ManagerModemAdded)->reset();
+          _scripts.value(ModemLockdownDisable)->reset();
+          _scripts.value(ModemLockdownEnable)->reset();
+          _scripts.value(ModemPoweredDisable)->reset();
+          _scripts.value(ModemPoweredEnable)->reset();
+          _scripts.value(ModemOnlineDisable)->reset();
+          _scripts.value(ModemOnlineEnable)->reset();
+          _scripts.value(SimManagerAdded)->reset();
+          _scripts.value(NetworkRegistrationAdded)->reset();
+          _scripts.value(ConnectionManagerAdded)->reset();
+          _scripts.value(ConnectionContextAdded)->reset();
+          _scripts.value(ConnectionContextAccessPointName)->reset();
+          _scripts.value(ConnectionContextUsername)->reset();
+          _scripts.value(ConnectionContextPassword)->reset();
+          _scripts.value(ConnectionContextActiveDisable)->reset();
+          _scripts.value(ConnectionContextActiveEnable)->reset();
+          _data.restartModem = false;
+          _data.managerModemExist = false;
+          _data.modemLockdown = false;
           _data.modemPowered = false;
-          _data.modemOnline = false;
-          _data.simManagerAdded = false;
-          _data.networkRegistrationAdded = false;
-          _data.connectionManagerAdded = false;
-          _data.connectionManagerAttached = false;
-          _data.connectionManagerPowered = false;
-          _data.connectionContextAdded = false;
-          _data.connectionContextActive = false;
-          _data.simManagerCardIdentifier.clear();
-          _data.simManagerServiceProviderName.clear();
-          _data.networkRegistrationStatus.clear();
-          for (const ScriptType type :
-               {ModemPoweredDisable, ModemPoweredEnable, ModemOnlineDisable, ModemOnlineEnable, SimManagerAdded,
-                NetworkRegistrationAdded, ConnectionManagerAdded, ConnectionContextAdded,
-                ConnectionContextAccessPointName, ConnectionContextUsername, ConnectionContextPassword,
-                ConnectionContextActiveDisable, ConnectionContextActiveEnable})
-            _scripts.value(type)->reset();
-        }
-      }
-      break;
-      case State::OfonoModemPowered:
-      {
-        _data.modemPowered = state.value().toBool();
-        if (!_data.connectionManagerPowered)
-        {
           _data.modemOnline = false;
           _data.simManagerAdded = false;
           _data.networkRegistrationAdded = false;
@@ -204,247 +196,333 @@ void Automator::processing(const State &state)
           _data.connectionContextAccessPointName.clear();
           _data.connectionContextUsername.clear();
           _data.connectionContextPassword.clear();
-          for (const ScriptType type :
-               {ModemOnlineDisable, ModemOnlineEnable, SimManagerAdded, NetworkRegistrationAdded,
-                ConnectionManagerAdded, ConnectionContextAdded, ConnectionContextAccessPointName,
-                ConnectionContextUsername, ConnectionContextPassword, ConnectionContextActiveDisable,
-                ConnectionContextActiveEnable})
-            _scripts.value(type)->reset();
         }
-      }
-      break;
-      case State::OfonoModemOnline:
-      {
-        _data.modemOnline = state.value().toBool();
-        if (!_data.modemOnline)
+        break;
+        case State::OfonoModemInterfaceSimManagerRemoved:
         {
-          _data.networkRegistrationAdded = false;
+          _scripts.value(SimManagerAdded)->reset();
+          _data.simManagerAdded = false;
+          _data.simManagerCardIdentifier.clear();
+          _data.simManagerServiceProviderName.clear();
+        }
+        break;
+        case State::OfonoModemInterfaceConnectionManagerRemoved:
+        {
+          _scripts.value(ConnectionManagerAdded)->reset();
+          _scripts.value(ConnectionContextAdded)->reset();
+          _scripts.value(ConnectionContextAccessPointName)->reset();
+          _scripts.value(ConnectionContextUsername)->reset();
+          _scripts.value(ConnectionContextPassword)->reset();
+          _scripts.value(ConnectionContextActiveDisable)->reset();
+          _scripts.value(ConnectionContextActiveEnable)->reset();
+          _data.connectionManagerAdded = false;
           _data.connectionManagerAttached = false;
           _data.connectionManagerPowered = false;
+          _data.connectionContextAdded = false;
           _data.connectionContextActive = false;
-          //_data.simManagerServiceProviderName.clear();
+        }
+        break;
+        case State::OfonoModemInterfaceNetworkRegistrationRemoved:
+        {
+          _scripts.value(NetworkRegistrationAdded)->reset();
+          _data.networkRegistrationAdded = false;
           _data.networkRegistrationStatus.clear();
-          for (const ScriptType type :
-               {NetworkRegistrationAdded, ConnectionContextAccessPointName, ConnectionContextUsername,
-                ConnectionContextPassword, ConnectionContextActiveDisable, ConnectionContextActiveEnable})
-            _scripts.value(type)->reset();
         }
-      }
-      break;
-      case State::OfonoSimManagerCardIdentifier: _data.simManagerCardIdentifier = state.value().toString(); break;
-      case State::OfonoSimManagerServiceProviderName:
-        _data.simManagerServiceProviderName = state.value().toString();
         break;
-      case State::OfonoNetworkRegistrationStatus:
-      {
-
-        networkRegistrationDeregistered =
-            ("registered" == _data.networkRegistrationStatus && "registered" != state.value().toString());
-        _data.networkRegistrationStatus = state.value().toString();
-        if (networkRegistrationDeregistered)
+        case State::OfonoConnectionManagerContextRemoved:
         {
+          _scripts.value(ConnectionContextAdded)->reset();
+          _scripts.value(ConnectionContextAccessPointName)->reset();
+          _scripts.value(ConnectionContextUsername)->reset();
+          _scripts.value(ConnectionContextPassword)->reset();
+          _scripts.value(ConnectionContextActiveDisable)->reset();
+          _scripts.value(ConnectionContextActiveEnable)->reset();
           _data.connectionManagerAttached = false;
+          _data.connectionManagerPowered = false;
+          _data.connectionContextAdded = false;
           _data.connectionContextActive = false;
-          for (const ScriptType type : {ConnectionContextActiveDisable, ConnectionContextActiveEnable})
-            _scripts.value(type)->reset();
+          _data.connectionContextAccessPointName.clear();
+          _data.connectionContextUsername.clear();
+          _data.connectionContextPassword.clear();
         }
-      }
-      break;
-      case State::OfonoConnectionManagerAttached:
-      {
-        connectionManagerDetached = (_data.connectionManagerAttached && !state.value().toBool());
-        _data.connectionManagerAttached = state.value().toBool();
-        if (connectionManagerDetached)
+        break;
+        case State::OfonoModemLockdown:
         {
-          _data.connectionContextActive = false;
-          for (const ScriptType type : {ConnectionContextActiveDisable, ConnectionContextActiveEnable})
-            _scripts.value(type)->reset();
+          _data.modemLockdown = state.value().toBool();
+          if (_data.modemLockdown)
+          {
+            _scripts.value(ModemLockdownDisable)->reset();
+            _scripts.value(ModemLockdownEnable)->reset();
+            _scripts.value(ModemPoweredDisable)->reset();
+            _scripts.value(ModemPoweredEnable)->reset();
+            _scripts.value(ModemOnlineDisable)->reset();
+            _scripts.value(ModemOnlineEnable)->reset();
+            _scripts.value(SimManagerAdded)->reset();
+            _scripts.value(NetworkRegistrationAdded)->reset();
+            _scripts.value(ConnectionManagerAdded)->reset();
+            _scripts.value(ConnectionContextAdded)->reset();
+            _scripts.value(ConnectionContextAccessPointName)->reset();
+            _scripts.value(ConnectionContextUsername)->reset();
+            _scripts.value(ConnectionContextPassword)->reset();
+            _scripts.value(ConnectionContextActiveDisable)->reset();
+            _scripts.value(ConnectionContextActiveEnable)->reset();
+            _data.modemPowered = false;
+            _data.modemOnline = false;
+            _data.simManagerAdded = false;
+            _data.networkRegistrationAdded = false;
+            _data.connectionManagerAdded = false;
+            _data.connectionManagerAttached = false;
+            _data.connectionManagerPowered = false;
+            _data.connectionContextAdded = false;
+            _data.connectionContextActive = false;
+            _data.simManagerCardIdentifier.clear();
+            _data.simManagerServiceProviderName.clear();
+            _data.networkRegistrationStatus.clear();
+          }
         }
-      }
-      break;
-      case State::OfonoConnectionManagerPowered: _data.connectionManagerPowered = state.value().toBool(); break;
-      case State::OfonoConnectionContextAccessPointName:
-        _data.connectionContextAccessPointName = state.value().toString();
         break;
-      case State::OfonoConnectionContextUsername: _data.connectionContextUsername = state.value().toString(); break;
-      case State::OfonoConnectionContextPassword: _data.connectionContextPassword = state.value().toString(); break;
-      case State::OfonoConnectionContextActive: _data.connectionContextActive = state.value().toBool(); break;
-      case State::OfonoServiceUnregistered:
-      case State::OfonoManagerModemRemoved:
-      {
-        _data.restartModem = false;
-        _data.managerModemAdded = false;
-        _data.modemLockdown = false;
-        _data.modemPowered = false;
-        _data.modemOnline = false;
-        _data.simManagerAdded = false;
-        _data.networkRegistrationAdded = false;
-        _data.connectionManagerAdded = false;
-        _data.connectionManagerAttached = false;
-        _data.connectionManagerPowered = false;
-        _data.connectionContextAdded = false;
-        _data.connectionContextActive = false;
-        _data.simManagerCardIdentifier.clear();
-        _data.simManagerServiceProviderName.clear();
-        _data.networkRegistrationStatus.clear();
-        _data.connectionContextAccessPointName.clear();
-        _data.connectionContextUsername.clear();
-        _data.connectionContextPassword.clear();
-        for (const ScriptType type :
-             {ManagerModemAdded, ModemLockdownDisable, ModemLockdownEnable, ModemPoweredDisable, ModemPoweredEnable,
-              ModemOnlineDisable, ModemOnlineEnable, SimManagerAdded, NetworkRegistrationAdded, ConnectionManagerAdded,
-              ConnectionContextAdded, ConnectionContextAccessPointName, ConnectionContextUsername,
-              ConnectionContextPassword, ConnectionContextActiveDisable, ConnectionContextActiveEnable})
-          _scripts.value(type)->reset();
-      }
-      break;
-      case State::OfonoModemInterfaceSimManagerRemoved:
-      {
-        D("XXX: State::OfonoModemInterfaceSimManagerRemoved");
-        _data.simManagerAdded = false;
-        _data.simManagerCardIdentifier.clear();
-        _data.simManagerServiceProviderName.clear();
-        _scripts.value(SimManagerAdded)->reset();
-      }
-      break;
-      case State::OfonoModemInterfaceConnectionManagerRemoved:
-      {
-        D("XXX: State::OfonoModemInterfaceConnectionManagerRemoved");
-        _data.connectionManagerAdded = false;
-        _data.connectionManagerAttached = false;
-        _data.connectionManagerPowered = false;
-        _data.connectionContextAdded = false;
-        _data.connectionContextActive = false;
-        //        _data.connectionContextAccessPointName.clear();
-        //        _data.connectionContextUsername.clear();
-        //        _data.connectionContextPassword.clear();
-        for (const ScriptType type : {ConnectionManagerAdded, ConnectionContextAdded, ConnectionContextAccessPointName,
-                                      ConnectionContextUsername, ConnectionContextPassword,
-                                      ConnectionContextActiveDisable, ConnectionContextActiveEnable})
-          _scripts.value(type)->reset();
-      }
-      break;
-      case State::OfonoModemInterfaceNetworkRegistrationRemoved:
-      {
-        _data.networkRegistrationAdded = false;
-        _data.networkRegistrationStatus.clear();
-        _scripts.value(NetworkRegistrationAdded)->reset();
-      }
-      break;
-      case State::OfonoConnectionManagerContextRemoved:
-      {
-        D("XXX: State::OfonoConnectionManagerContextRemoved");
-        _data.connectionManagerAttached = false;
-        _data.connectionManagerPowered = false;
-        _data.connectionContextAdded = false;
-        _data.connectionContextActive = false;
-        _data.connectionContextAccessPointName.clear();
-        _data.connectionContextUsername.clear();
-        _data.connectionContextPassword.clear();
-        for (const ScriptType type :
-             {ConnectionContextAdded, ConnectionContextAccessPointName, ConnectionContextUsername,
-              ConnectionContextPassword, ConnectionContextActiveDisable, ConnectionContextActiveEnable})
-          _scripts.value(type)->reset();
+        case State::OfonoModemPowered:
+        {
+          D("State::OfonoModemPowered:" << state.value().toBool());
+          _data.modemPowered = state.value().toBool();
+          if (!_data.connectionManagerPowered)
+          {
+            _scripts.value(ModemPoweredDisable)->reset();
+            _scripts.value(ModemPoweredEnable)->reset();
+            _scripts.value(ModemOnlineDisable)->reset();
+            _scripts.value(ModemOnlineEnable)->reset();
+            _scripts.value(SimManagerAdded)->reset();
+            _scripts.value(NetworkRegistrationAdded)->reset();
+            _scripts.value(ConnectionManagerAdded)->reset();
+            _scripts.value(ConnectionContextAdded)->reset();
+            _scripts.value(ConnectionContextAccessPointName)->reset();
+            _scripts.value(ConnectionContextUsername)->reset();
+            _scripts.value(ConnectionContextPassword)->reset();
+            _scripts.value(ConnectionContextActiveDisable)->reset();
+            _scripts.value(ConnectionContextActiveEnable)->reset();
+            _data.modemOnline = false;
+            _data.simManagerAdded = false;
+            _data.networkRegistrationAdded = false;
+            _data.connectionManagerAdded = false;
+            _data.connectionManagerAttached = false;
+            _data.connectionManagerPowered = false;
+            _data.connectionContextAdded = false;
+            _data.connectionContextActive = false;
+            _data.simManagerCardIdentifier.clear();
+            _data.simManagerServiceProviderName.clear();
+            _data.networkRegistrationStatus.clear();
+            _data.connectionContextAccessPointName.clear();
+            _data.connectionContextUsername.clear();
+            _data.connectionContextPassword.clear();
+          }
+        }
         break;
+        case State::OfonoModemOnline:
+        {
+          _data.modemOnline = state.value().toBool();
+          if (!_data.modemOnline)
+          {
+            _scripts.value(NetworkRegistrationAdded)->reset();
+            _scripts.value(ConnectionContextActiveDisable)->reset();
+            _scripts.value(ConnectionContextActiveEnable)->reset();
+            _data.networkRegistrationAdded = false;
+            _data.connectionManagerAttached = false;
+            _data.connectionManagerPowered = false;
+            _data.connectionContextActive = false;
+            //_data.simManagerServiceProviderName.clear();
+          }
+        }
+        break;
+        case State::OfonoSimManagerCardIdentifier:
+        {
+          _data.simManagerCardIdentifier = state.value().toString();
+        }
+        break;
+        case State::OfonoSimManagerServiceProviderName:
+        {
+          _data.simManagerServiceProviderName = state.value().toString();
+        }
+        break;
+        case State::OfonoNetworkRegistrationStatus:
+        {
+          networkRegistrationDeregistered =
+              ("registered" == _data.networkRegistrationStatus && "registered" != state.value().toString());
+          _data.networkRegistrationStatus = state.value().toString();
+          if (networkRegistrationDeregistered)
+          {
+            _scripts.value(ConnectionContextActiveDisable)->reset();
+            _scripts.value(ConnectionContextActiveEnable)->reset();
+            _data.connectionManagerAttached = false;
+            _data.connectionContextActive = false;
+          }
+        }
+        break;
+        case State::OfonoConnectionManagerAttached:
+        {
+          connectionManagerDetached = (_data.connectionManagerAttached && !state.value().toBool());
+          _data.connectionManagerAttached = state.value().toBool();
+          if (connectionManagerDetached)
+          {
+            _scripts.value(ConnectionContextActiveDisable)->reset();
+            _scripts.value(ConnectionContextActiveEnable)->reset();
+            _data.connectionContextActive = false;
+          }
+        }
+        break;
+        case State::OfonoConnectionManagerPowered:
+        {
+          _data.connectionManagerPowered = state.value().toBool();
+        }
+        break;
+        case State::OfonoConnectionContextAccessPointName:
+        {
+          _data.connectionContextAccessPointName = state.value().toString();
+        }
+        break;
+        case State::OfonoConnectionContextUsername:
+        {
+          _data.connectionContextUsername = state.value().toString();
+        }
+        break;
+        case State::OfonoConnectionContextPassword:
+        {
+          _data.connectionContextPassword = state.value().toString();
+        }
+        break;
+        case State::OfonoConnectionContextActive:
+        {
+          _data.connectionContextActive = state.value().toBool();
+        }
+        break;
+        default: return; break;
       }
-      break;
-      default: break;
     }
+    break;
+    case State::CallStarted:
+    {
+      D("--- State::CallStarted:" << state);
+    }
+    break;
+    case State::CallFinished:
+    {
+      D("--- State::CallFinished:" << state);
+    }
+    break;
+    case State::CallError:
+    {
+      const QDBusError &error = state.error();
+      switch (State::errorType(error))
+      {
+        case State::OfonoErrorType::DBusError:
+        {
+          switch (error.type())
+          {
+            // timeout
+            case QDBusError::NoReply:
+            case QDBusError::Timeout:
+            case QDBusError::TimedOut:
+            {
+              D("--- State::CallError: " << error.name() << " Repeat");
+              Q_EMIT Call(state.type(), state.value());
+            }
+            break;
+            default: break;
+          }
+        }
+        break;
+        case State::OfonoErrorType::InProgress:
+        case State::OfonoErrorType::Failed:
+        {
+          D("--- State::CallError:" << state);
+        }
+        break;
+        default:
+        {
+          D("--- State::CallError:" << state);
+          throw astr_global::Exception("--- State::CallError: " + state);
+        }
+        break;
+      }
+    }
+    break;
+    default: break;
   }
 
-  _data.debug();
-  D(networkRegistrationDeregistered << connectionManagerDetached);
+  static long n = 0;
+  D("|STATE|" << n++ << ":" << state);
 
   // Autoconnection
-  D(scriptsSignalCount << scriptsRunningCount);
-  if (!_data.managerModemAdded || scriptsRunningCount || scriptsSignalCount)
+  if (!_data.managerModemExist || scriptsSignalCount || scriptsRunningCount || scriptsErrorCount)
+  {
+    QString msg = QString("MODEM: %1|SIGNAL: %2|RUNNING: %3|ERROR: %4")
+                      .arg((_data.managerModemExist ? "true" : "false"), QString::number(scriptsSignalCount),
+                           QString::number(scriptsRunningCount), QString::number(scriptsErrorCount));
+    if (scriptsErrorCount)
+      W(msg);
+    else
+      D(msg);
+    debugScriptsRunning();
     return;
+  }
 
+  // 1. Restart new modem
   if (_data.restartModem)
   {
-    D("--- 0 State::OfonoModemPowered, false");
-    if (!_scripts.value(ModemPoweredDisable)->Signal())
-    {
-      _timer->start();
-      return;
-    }
+    _scripts.value(ModemPoweredDisable)->Signal();
     _data.restartModem = false;
     Q_EMIT Call(State::OfonoModemPowered, false);
     return;
   }
 
+  // 1. PowerOn modem
   if (!_data.modemPowered)
   {
-    D("--- 1 State::OfonoModemPowered, true");
-    if (!_scripts.value(ModemPoweredEnable)->Signal())
-    {
-      _timer->start();
-      return;
-    }
+    _scripts.value(ModemPoweredEnable)->Signal();
     Q_EMIT Call(State::OfonoModemPowered, true);
     return;
   }
 
+  // 2. Wait modem interfaces
   if (!(_data.simManagerAdded && _data.connectionManagerAdded && _data.connectionContextAdded))
     return;
 
+  // 3. Online modem
   if (!_data.modemOnline)
   {
-    D("--- 2 State::OfonoModemOnline, true");
-    if (!_scripts.value(ModemOnlineEnable)->Signal())
-    {
-      _timer->start();
-      return;
-    }
+    _scripts.value(ModemOnlineEnable)->Signal();
     Q_EMIT Call(State::OfonoModemOnline, true);
     return;
   }
 
+  // 4. Wait sim provider
   if (_data.simManagerServiceProviderName.isEmpty())
     return;
 
+  // 5. Configuration ConnectionContext
   const ModemManagerData::Settings::Provider provider = _settings.providerSettings(_data.simManagerServiceProviderName);
   if (provider.accessPointName.isValid() &&
       _data.connectionContextAccessPointName != provider.accessPointName.toString())
   {
-    if (!_scripts.value(ConnectionContextAccessPointName)->Signal())
-    {
-      _timer->start();
-      return;
-    }
+    _scripts.value(ConnectionContextAccessPointName)->Signal();
     Q_EMIT Call(State::OfonoConnectionContextAccessPointName, provider.accessPointName.toString());
     return;
   }
   if (provider.username.isValid() && _data.connectionContextUsername != provider.username.toString())
   {
-    if (!_scripts.value(ConnectionContextUsername)->Signal())
-    {
-      _timer->start();
-      return;
-    }
+    _scripts.value(ConnectionContextUsername)->Signal();
     Q_EMIT Call(State::OfonoConnectionContextUsername, provider.username.toString());
     return;
   }
   if (provider.password.isValid() && _data.connectionContextPassword != provider.password.toString())
   {
-    if (!_scripts.value(ConnectionContextPassword)->Signal())
-    {
-      _timer->start();
-      return;
-    }
+    _scripts.value(ConnectionContextPassword)->Signal();
     Q_EMIT Call(State::OfonoConnectionContextPassword, provider.password.toString());
     return;
   }
 
-  if (/*networkRegistrationDeregistered ||*/ connectionManagerDetached)
+  if (connectionManagerDetached)
   {
-    D("networkRegistrationDeregistered || connectionManagerDetached" << networkRegistrationDeregistered
-                                                                     << connectionManagerDetached);
-    if (!_scripts.value(ModemPoweredDisable)->Signal())
-    {
-      _timer->start();
-      return;
-    }
+    _scripts.value(ModemPoweredDisable)->Signal();
     Q_EMIT Call(State::OfonoModemPowered, false);
     return;
   }
@@ -452,12 +530,7 @@ void Automator::processing(const State &state)
   if ("registered" == _data.networkRegistrationStatus && _data.connectionManagerAttached &&
       !_data.connectionContextActive)
   {
-    D("--- command: Call(State::OfonoConnectionContextActive, true)");
-    if (!_scripts.value(ConnectionContextActiveEnable)->Signal())
-    {
-      _timer->start();
-      return;
-    }
+    _scripts.value(ConnectionContextActiveEnable)->Signal();
     Q_EMIT Call(State::OfonoConnectionContextActive, true);
     return;
   }
@@ -466,15 +539,29 @@ void Automator::processing(const State &state)
 void Automator::debugScriptsRunning()
 {
   D("----------------------------------------------------------");
-  for (auto &item : _scripts)
-    D(*item);
+  D("ManagerModemAdded                :" << *_scripts.value(ManagerModemAdded));
+  D("ModemLockdownDisable             :" << *_scripts.value(ModemLockdownDisable));
+  D("ModemLockdownEnable              :" << *_scripts.value(ModemLockdownEnable));
+  D("ModemPoweredDisable              :" << *_scripts.value(ModemPoweredDisable));
+  D("ModemPoweredEnable               :" << *_scripts.value(ModemPoweredEnable));
+  D("ModemOnlineDisable               :" << *_scripts.value(ModemOnlineDisable));
+  D("ModemOnlineEnable                :" << *_scripts.value(ModemOnlineEnable));
+  D("SimManagerAdded                  :" << *_scripts.value(SimManagerAdded));
+  D("NetworkRegistrationAdded         :" << *_scripts.value(NetworkRegistrationAdded));
+  D("ConnectionManagerAdded           :" << *_scripts.value(ConnectionManagerAdded));
+  D("ConnectionContextAdded           :" << *_scripts.value(ConnectionContextAdded));
+  D("ConnectionContextAccessPointName :" << *_scripts.value(ConnectionContextAccessPointName));
+  D("ConnectionContextUsername        :" << *_scripts.value(ConnectionContextUsername));
+  D("ConnectionContextPassword        :" << *_scripts.value(ConnectionContextPassword));
+  D("ConnectionContextActiveDisable   :" << *_scripts.value(ConnectionContextActiveDisable));
+  D("ConnectionContextActiveEnable    :" << *_scripts.value(ConnectionContextActiveEnable));
 }
 
 void Automator::Data::debug()
 {
   D("----------------------------------------------------------");
   D("+++ restartModem                :" << restartModem);
-  D("+++ managerModemAdded           :" << managerModemAdded);
+  D("+++ managerModemAdded           :" << managerModemExist);
   D("+++ simManagerAdded             :" << simManagerAdded);
   D("+++ networkRegistrationAdded    :" << networkRegistrationAdded);
   D("+++ connectionManagerAdded      :" << connectionManagerAdded);

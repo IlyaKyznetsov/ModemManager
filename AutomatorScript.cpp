@@ -19,12 +19,19 @@ QDBusError AutomatorScript::error() const
 
 bool AutomatorScript::Signal()
 {
-  DF() << _scriptStatus;
   if (_scriptStatus == State::Signal || State::_EMPTYSTATUS_ == _scriptStatus || State::CallFinished == _scriptStatus)
   {
     _scriptStatus = State::Signal;
     return true;
   }
+
+  const QMap<State::Status, QString> statuses = {{State::_EMPTYSTATUS_, "_EMPTYSTATUS_"},
+                                                 {State::Signal, "Signal"},
+                                                 {State::CallStarted, "CallStarted"},
+                                                 {State::CallFinished, "CallFinished"},
+                                                 {State::CallError, "CallError"}};
+
+  throw astr_global::Exception("SIGNAL: " + statuses.value(_scriptStatus));
   return false;
 }
 
@@ -49,7 +56,7 @@ State::Status AutomatorScript::processing(const State &state)
     if (iterator + 1 == _script.cend())
     {
       _iterator = _script.cbegin();
-      _scriptStatus = State::_EMPTYTYPE_;
+      _scriptStatus = State::_EMPTYSTATUS_;
       return State::CallFinished;
     }
   }

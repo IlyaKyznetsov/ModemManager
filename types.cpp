@@ -130,6 +130,9 @@ State::operator QString() const
   if (type.isEmpty())
     throw astr_global::Exception("Bad State::Type: " + QString::number(_type));
 
+  QString err;
+  if (errorType(error()) != QDBusError::NoError)
+    err += "|error=" + error().name() + " : " + error().message();
   return "(State::Type::" + type + "|State::Status::" + statuses.value(_status, "Invalid") +
-         "|value=" + value().toString() + ")";
+         "|value=" + value().toString() + err + ")";
 }

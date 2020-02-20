@@ -66,7 +66,7 @@ private:
   struct Data
   {
     bool restartModem = false;
-    bool managerModemAdded = false;
+    bool managerModemExist = false;
     bool modemLockdown = false;
     bool modemPowered = false;
     bool modemOnline = false;
