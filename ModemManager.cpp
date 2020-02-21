@@ -442,10 +442,6 @@ void ModemManager::_signalConnectionContext(const State &state)
 
 void ModemManager::_automatorProcessing(const State &state)
 {
-  static int n = 0;
-  D("--- PROCESSING" << ++n << state);
-  bool connectionManagerDetached = false;
-  bool networkRegistrationDeregistered = false;
   switch (state.type())
   {
     case State::OfonoModemLockdown:
@@ -475,13 +471,14 @@ void ModemManager::_automatorProcessing(const State &state)
     break;
     case State::OfonoNetworkRegistrationStatus:
     {
-      networkRegistrationDeregistered =
-          ("registered" == _ofonoState.networkRegistration->status && "registered" != state.value().toString());
+      if ("registered" == _ofonoState.networkRegistration->status)
+        _automator.networkRegistrationRegistered = true;
     }
     break;
     case State::OfonoConnectionManagerAttached:
     {
-      connectionManagerDetached = (_ofonoState.connectionManager->attached && !state.value().toBool());
+      if (_ofonoState.connectionManager->attached)
+        _automator.connectionManagerAtached = true;
     }
     break;
     case State::OfonoConnectionContextAccessPointName:
@@ -510,14 +507,22 @@ void ModemManager::_automatorProcessing(const State &state)
       if (State::CallStarted == _automator.connectionContextActiveStatus && State::Signal == state.status())
         return;
       _automator.connectionContextActiveStatus = state.status();
+      if (_ofonoState.connectionContext->active)
+        _automator.connectionContextActive = true;
     }
     break;
     default: break;
   }
 
+  static long n = 0;
+  D("-----------------------------------------------------------------");
+  D("--- PROCESSING" << ++n << state);
   D("Autoconnection");
   D("modemInitialized                       :" << _automator.modemInitialized);
   D("needPowerOff                           :" << _automator.needPowerOff);
+  D("- networkRegistrationRegistered        :" << _automator.networkRegistrationRegistered);
+  D("- connectionManagerAtached             :" << _automator.connectionManagerAtached);
+  D("- connectionContextActive              :" << _automator.connectionContextActive);
   D("modemLockdownStatus                    :" << State::State::toString(_automator.modemLockdownStatus));
   D("modemPoweredStatus                     :" << State::State::toString(_automator.modemPoweredStatus));
   D("modemOnlineStatus                      :" << State::State::toString(_automator.modemOnlineStatus));
@@ -526,64 +531,120 @@ void ModemManager::_automatorProcessing(const State &state)
   D("connectionContextUsernameStatus        :" << State::State::toString(_automator.connectionContextUsernameStatus));
   D("connectionContextPasswordStatus        :" << State::State::toString(_automator.connectionContextPasswordStatus));
   D("connectionContextActiveStatus          :" << State::State::toString(_automator.connectionContextActiveStatus));
+  debugOfonoState(_ofonoState);
+  D("-----------------------------------------------------------------");
   // Autoconnection
 
   if (State::CallError == state.status())
   {
-    if (isTimeoutError(state.error()))
+    switch (state.type())
     {
-      switch (state.type())
+      case State::OfonoModemPowered:
       {
-        case State::OfonoModemPowered:
-        {
-          _automator.modemPoweredStatus = State::CallStarted;
-          Q_EMIT call(State::OfonoModemPowered, state.value());
-          return;
-        }
-        break;
-        case State::OfonoModemOnline:
+        _automator.modemPoweredStatus = State::CallStarted;
+        Q_EMIT call(State::OfonoModemPowered, state.value());
+        return;
+      }
+      break;
+      case State::OfonoModemOnline:
+      {
+        if (isTimeoutError(state.error()))
         {
           _automator.modemOnlineStatus = State::CallStarted;
           Q_EMIT call(State::OfonoModemOnline, state.value());
-          return;
         }
-        break;
-        case State::OfonoConnectionContextAccessPointName:
+        else
+        {
+          _automator.modemOnlineStatus = State::Signal;
+          _automator.modemPoweredStatus = State::CallStarted;
+          Q_EMIT call(State::OfonoModemPowered, state.value());
+        }
+        return;
+      }
+      break;
+      case State::OfonoConnectionContextAccessPointName:
+      {
+        if (isTimeoutError(state.error()))
         {
           _automator.connectionContextAccessPointNameStatus = State::CallStarted;
           Q_EMIT call(State::OfonoConnectionContextAccessPointName, state.value());
-          return;
         }
-        break;
-        case State::OfonoConnectionContextUsername:
+        else
+        {
+          _automator.connectionContextAccessPointNameStatus = State::Signal;
+          _automator.modemPoweredStatus = State::CallStarted;
+          Q_EMIT call(State::OfonoModemPowered, state.value());
+        }
+        return;
+      }
+      break;
+      case State::OfonoConnectionContextUsername:
+      {
+        if (isTimeoutError(state.error()))
         {
           _automator.connectionContextUsernameStatus = State::CallStarted;
           Q_EMIT call(State::OfonoConnectionContextUsername, state.value());
-          return;
         }
-        break;
-        case State::OfonoConnectionContextPassword:
+        else
+        {
+          _automator.connectionContextUsernameStatus = State::Signal;
+          _automator.modemPoweredStatus = State::CallStarted;
+          Q_EMIT call(State::OfonoModemPowered, state.value());
+        }
+        return;
+      }
+      break;
+      case State::OfonoConnectionContextPassword:
+      {
+        if (isTimeoutError(state.error()))
         {
           _automator.connectionContextPasswordStatus = State::CallStarted;
           Q_EMIT call(State::OfonoConnectionContextPassword, state.value());
-          return;
         }
-        break;
-        case State::OfonoConnectionContextActive:
+        else
+        {
+          _automator.connectionContextPasswordStatus = State::Signal;
+          _automator.modemPoweredStatus = State::CallStarted;
+          Q_EMIT call(State::OfonoModemPowered, state.value());
+        }
+        return;
+      }
+      break;
+      case State::OfonoConnectionContextActive:
+      {
+        if (isTimeoutError(state.error()))
         {
           _automator.connectionContextActiveStatus = State::CallStarted;
           Q_EMIT call(State::OfonoConnectionContextActive, state.value());
-          return;
         }
-        break;
-        default: throw astr_global::Exception("--- State::CallError: " + state); break;
+        else
+        {
+          _automator.connectionContextActiveStatus = State::Signal;
+          _automator.modemPoweredStatus = State::CallStarted;
+          Q_EMIT call(State::OfonoModemPowered, state.value());
+        }
+        return;
       }
+      break;
+      default:
+      {
+        W("--- State::CallError: " + state);
+        throw astr_global::Exception("--- State::CallError: " + state);
+      }
+      break;
     }
-    throw astr_global::Exception("--- State::CallError: " + state);
   }
 
   if (!(_modem->isValid() && _automator.modemInitialized && State::Signal == _automator.modemLockdownStatus &&
-        State::Signal == _automator.modemPoweredStatus && State::Signal == _automator.modemOnlineStatus))
+        State::Signal == _automator.modemPoweredStatus && State::Signal == _automator.modemOnlineStatus &&
+        (State::Signal == _automator.connectionContextAccessPointNameStatus ||
+         State::_EMPTYSTATUS_ == _automator.connectionContextAccessPointNameStatus) &&
+        (State::Signal == _automator.connectionContextUsernameStatus ||
+         State::_EMPTYSTATUS_ == _automator.connectionContextUsernameStatus) &&
+        (State::Signal == _automator.connectionContextPasswordStatus ||
+         State::_EMPTYSTATUS_ == _automator.connectionContextPasswordStatus) &&
+        (State::Signal == _automator.connectionContextActiveStatus ||
+         State::_EMPTYSTATUS_ == _automator.connectionContextActiveStatus)))
     return;
 
   D("1. Restart new modem");
@@ -647,9 +708,21 @@ void ModemManager::_automatorProcessing(const State &state)
     return;
   }
 
-  D("7. ConnectionManagerDetached:" << connectionManagerDetached);
-  if (connectionManagerDetached)
+  if (_automator.networkRegistrationRegistered && "unregistered" == _ofonoState.networkRegistration->status)
   {
+    _automator.networkRegistrationRegistered = false;
+    _automator.connectionManagerAtached = false;
+    _automator.connectionContextActive = false;
+    _automator.modemPoweredStatus = State::CallStarted;
+    Q_EMIT call(State::OfonoModemPowered, false);
+    return;
+  }
+
+  D("7. ConnectionManagerDetached");
+  if (_automator.connectionManagerAtached && !_ofonoState.connectionManager->attached)
+  {
+    _automator.connectionManagerAtached = false;
+    _automator.connectionContextActive = false;
     _automator.modemPoweredStatus = State::CallStarted;
     Q_EMIT call(State::OfonoModemPowered, false);
     return;
@@ -659,8 +732,17 @@ void ModemManager::_automatorProcessing(const State &state)
   if ("registered" == _ofonoState.networkRegistration->status && _ofonoState.connectionManager->attached &&
       !_ofonoState.connectionContext->active)
   {
-    _automator.connectionContextActiveStatus = State::CallStarted;
-    Q_EMIT call(State::OfonoConnectionContextActive, true);
+    if (_automator.connectionContextActive)
+    {
+      _automator.connectionContextActive = false;
+      _automator.modemPoweredStatus = State::CallStarted;
+      Q_EMIT call(State::OfonoModemPowered, false);
+    }
+    else
+    {
+      _automator.connectionContextActiveStatus = State::CallStarted;
+      Q_EMIT call(State::OfonoConnectionContextActive, true);
+    }
     return;
   }
 }
@@ -807,6 +889,9 @@ bool ModemManager::AutomatorItem::operator!=(const State &state) const
 ModemManager::AutomatorStates::AutomatorStates()
     : modemInitialized(false),
       needPowerOff(false),
+      networkRegistrationRegistered(false),
+      connectionManagerAtached(false),
+      connectionContextActive(false),
       modemLockdownStatus(State::_EMPTYSTATUS_),
       modemPoweredStatus(State::_EMPTYSTATUS_),
       modemOnlineStatus(State::_EMPTYSTATUS_),
@@ -822,6 +907,9 @@ void ModemManager::AutomatorStates::reset()
   DF();
   modemInitialized = false;
   needPowerOff = false;
+  networkRegistrationRegistered = false;
+  connectionManagerAtached = false;
+  connectionContextActive = false;
   modemLockdownStatus = State::_EMPTYSTATUS_;
   modemPoweredStatus = State::_EMPTYSTATUS_;
   modemOnlineStatus = State::_EMPTYSTATUS_;

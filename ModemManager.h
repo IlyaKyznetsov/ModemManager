@@ -41,6 +41,10 @@ private:
   {
     bool modemInitialized;
     bool needPowerOff;
+    bool networkRegistrationRegistered;
+    bool connectionManagerAtached;
+    bool connectionContextActive;
+
     State::Status modemLockdownStatus;
     State::Status modemPoweredStatus;
     State::Status modemOnlineStatus;
