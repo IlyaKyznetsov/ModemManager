@@ -52,8 +52,6 @@ private:
     void reset();
   } _automator;
 
-
-  //  void _signalOfonoManager(const State &state);
   inline void _signalManager(const State &state);
   inline void _signalModem(const State &state);
   inline void _signalSimManager(const State &state);
@@ -61,6 +59,7 @@ private:
   inline void _signalConnectionManager(const State &state);
   inline void _signalConnectionContext(const State &state);
   inline void _automatorProcessing(const State &state);
+  bool isTimeoutError(const QDBusError &error);
 
 private Q_SLOTS:
   void debugOfonoState(const ModemManagerData::OfonoState &state);
