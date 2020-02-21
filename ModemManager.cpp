@@ -557,7 +557,7 @@ void ModemManager::_automatorProcessing(const State &state)
         {
           _automator.modemOnlineStatus = State::Signal;
           _automator.modemPoweredStatus = State::CallStarted;
-          Q_EMIT call(State::OfonoModemPowered, state.value());
+          Q_EMIT call(State::OfonoModemPowered, false);
         }
         return;
       }
@@ -573,7 +573,7 @@ void ModemManager::_automatorProcessing(const State &state)
         {
           _automator.connectionContextAccessPointNameStatus = State::Signal;
           _automator.modemPoweredStatus = State::CallStarted;
-          Q_EMIT call(State::OfonoModemPowered, state.value());
+          Q_EMIT call(State::OfonoModemPowered, false);
         }
         return;
       }
@@ -589,7 +589,7 @@ void ModemManager::_automatorProcessing(const State &state)
         {
           _automator.connectionContextUsernameStatus = State::Signal;
           _automator.modemPoweredStatus = State::CallStarted;
-          Q_EMIT call(State::OfonoModemPowered, state.value());
+          Q_EMIT call(State::OfonoModemPowered, false);
         }
         return;
       }
@@ -605,7 +605,7 @@ void ModemManager::_automatorProcessing(const State &state)
         {
           _automator.connectionContextPasswordStatus = State::Signal;
           _automator.modemPoweredStatus = State::CallStarted;
-          Q_EMIT call(State::OfonoModemPowered, state.value());
+          Q_EMIT call(State::OfonoModemPowered, false);
         }
         return;
       }
@@ -621,7 +621,7 @@ void ModemManager::_automatorProcessing(const State &state)
         {
           _automator.connectionContextActiveStatus = State::Signal;
           _automator.modemPoweredStatus = State::CallStarted;
-          Q_EMIT call(State::OfonoModemPowered, state.value());
+          Q_EMIT call(State::OfonoModemPowered, false);
         }
         return;
       }
