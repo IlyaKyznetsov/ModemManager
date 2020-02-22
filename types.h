@@ -53,11 +53,12 @@ public:
     OfonoNetworkRegistrationScan,
     OfonoNetworkRegistrationDeregister,
     OfonoNetworkRegistrationStatus, //[readonly: "unregistered" "registered" "searching" "denied" "unknown" "roaming"];
-    OfonoNetworkRegistrationName,   //[readonly];
+    OfonoNetworkRegistrationName,     //[readonly];
     OfonoNetworkRegistrationStrength, //[readonly, optional between 0-100 percent]
     // ConnectionManager
     OfonoConnectionManagerGetProperties,
     OfonoConnectionManagerGetContexts,
+    OfonoConnectionManagerContextNone,
     OfonoConnectionManagerAddContext,
     OfonoConnectionManagerRemoveContext,
     OfonoConnectionManagerContextAdded,
@@ -117,12 +118,27 @@ public:
   State(Type type, Status status, const QVariant &value);
   State(Type type, Status status, const QDBusError &error);
   State(Type type, Status status, const QVariant &value, const QDBusError &error);
-  Type type() const { return _type; }
-  Status status() const { return _status; }
-  QVariant value() const { return _value; }
-  QDBusError error() const { return _error; }
+  Type type() const
+  {
+    return _type;
+  }
+  Status status() const
+  {
+    return _status;
+  }
+  QVariant value() const
+  {
+    return _value;
+  }
+  QDBusError error() const
+  {
+    return _error;
+  }
   bool operator==(const State &state) const;
-  bool operator!=(const State &state) const { return !this->operator==(state); }
+  bool operator!=(const State &state) const
+  {
+    return !this->operator==(state);
+  }
   operator QString() const;
 
 private:

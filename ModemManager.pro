@@ -75,6 +75,7 @@ OTHER_FILES += $$XML_FILES\
     qofono-qt5.prf
 
 SOURCES += \
+        Automator.cpp \
         ModemManagerData.cpp \
         test/TestGui.cpp \
         Global.cpp \
@@ -93,6 +94,7 @@ SOURCES += \
 
 
 HEADERS += \
+    Automator.h \
     ModemManagerData.h \
     test/TestGui.h \
     Global.h \

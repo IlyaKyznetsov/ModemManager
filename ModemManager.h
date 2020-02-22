@@ -12,6 +12,7 @@ class SimManager;
 class NetworkRegistration;
 class ConnectionManager;
 class ConnectionContext;
+class Automator;
 
 class ModemManager : public QObject
 {
@@ -23,13 +24,16 @@ Q_SIGNALS:
   void OfonoStateChanged(const ModemManagerData::OfonoState &state);
   void StateChanged(const State &state);
 
+public Q_SLOTS:
+  void call(const State::Type callType, const QVariant &value);
+
 private Q_SLOTS:
   void onStateChanged(const State &state);
-  void call(const State::Type callType, const QVariant &value);
 
 private:
   const ModemManagerData::Settings _settings;
   QDBusServiceWatcher *_watcher;
+  Automator *_automator;
   Manager *_manager;
   Modem *_modem;
   SimManager *_simManager;
@@ -37,24 +41,6 @@ private:
   ConnectionManager *_connectionManager;
   ConnectionContext *_connectionContext;
   ModemManagerData::OfonoState _ofonoState;
-  struct AutomatorStates
-  {
-    bool modemInitialized;
-    bool needPowerOff;
-    bool networkRegistrationRegistered;
-    bool connectionManagerAtached;
-    bool connectionContextActive;
-
-    State::Status modemLockdownStatus;
-    State::Status modemPoweredStatus;
-    State::Status modemOnlineStatus;
-    State::Status connectionContextAccessPointNameStatus;
-    State::Status connectionContextUsernameStatus;
-    State::Status connectionContextPasswordStatus;
-    State::Status connectionContextActiveStatus;
-    AutomatorStates();
-    void reset();
-  } _automator;
 
   inline void _signalManager(const State &state);
   inline void _signalModem(const State &state);
@@ -62,11 +48,6 @@ private:
   inline void _signalNetworkRegistration(const State &state);
   inline void _signalConnectionManager(const State &state);
   inline void _signalConnectionContext(const State &state);
-  inline void _automatorProcessing(const State &state);
-  bool isTimeoutError(const QDBusError &error);
-
-private Q_SLOTS:
-  void debugOfonoState(const ModemManagerData::OfonoState &state);
 
 public Q_SLOTS:
   void t_modemPowered(bool value);
