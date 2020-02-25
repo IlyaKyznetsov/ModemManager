@@ -12,7 +12,8 @@ class Automator : public QObject
 public:
   Automator(QObject *parent);
   void reset();
-  void processing(const State &state, const ModemManagerData::OfonoState &ofonoState);
+  void processing(const ModemManagerData::Settings &settings, const State &state,
+                  const ModemManagerData::OfonoState &ofonoState);
   void errorHandler(const State &state, const ModemManagerData::OfonoState &ofonoState);
 Q_SIGNALS:
   void call(const State::Type callType, const QVariant &value);
@@ -20,7 +21,11 @@ Q_SIGNALS:
 private:
   void debug(const State &state, const ModemManagerData::OfonoState &ofonoState) const;
   bool isTimeoutError(const QDBusError &error);
+  bool modemAdded;
+  bool connectionContextConfigured;
+  int connectionContextCount;
   State::Type requestCall;
+  QVariant requestValue;
   State::Status modemLockdownStatus;
   State::Status modemPoweredStatus;
   State::Status modemOnlineStatus;
