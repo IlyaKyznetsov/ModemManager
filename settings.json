@@ -1,22 +1,25 @@
- {
-	"DBusTimeouts":{
-        "Manager":1000,
-        "Modem":1000,
-        "SimManager":1000,
-        "NetworkRegistration":1000,
-        "ConnectionManager":1000,
-        "ConnectionContext":1000
-	},
-	"AutoConnectionTimeouts":{
-        "DeferredCall":1000,
-        "WaitState":1000
-	},
-	"Providers":
-	{
-        "Beeline":{
-            "AccessPointName":"beeline.ru",
-            "Username":"beeline",
-            "Password":"beeline"
-            }
-	}
- }
+{
+    "DBusTimeouts":
+    {
+        "Manager":5000,
+        "Modem":5000,
+        "SimManager":5000,
+        "NetworkRegistration":5000,
+        "ConnectionManager":5000,
+        "ConnectionContext":5000
+    },
+    "AutoConnectionTimeouts":
+    {
+        "DeferredCall":5000,
+        "WaitState":5000
+    },
+    "Providers":
+    {
+    "Beeline":{
+        "AccessPointName":"beeline.ru",
+        "Username":"beeline",
+        "Password":"beeline"
+        }
+    }
+}
+

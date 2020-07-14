@@ -32,6 +32,7 @@ ModemManager::ModemManager(const ModemManagerData::Settings &settings, QObject *
       this);
   connect(_watcher, &QDBusServiceWatcher::serviceRegistered, [this]() {
     _ofonoState.isOfonoConnected = true;
+    _automator->reset();
     _manager->reset(Ofono::SERVICE);
   });
   connect(_watcher, &QDBusServiceWatcher::serviceUnregistered, [this]() {
@@ -91,11 +92,6 @@ void ModemManager::onStateChanged(const State &state)
       _signalConnectionContext(state);
   }
 
-  //  if (State(State::Type::OfonoModemGetProperties, State::Status::CallFinished) == state)
-  //    _automator.modemInitialized = true;
-
-  //  if (_ofonoState.isOfonoConnected && _modem->isValid())
-  //    _automatorProcessing(state);
   _automator->processing(_settings, state, _ofonoState);
 }
 
@@ -191,6 +187,7 @@ void ModemManager::_signalManager(const State &state)
       _ofonoState.networkRegistration.reset();
       _ofonoState.simManager.reset();
       _ofonoState.modem.reset();
+      _automator->reset();
     }
     break;
     default: return;

@@ -115,5 +115,6 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 FORMS += \
-    test/TestGui.ui \
     test/TestGui.ui
+
+OTHER_FILES += README

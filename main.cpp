@@ -3,6 +3,9 @@
 #include "utils.h"
 #include <QApplication>
 
+// OFONO_PPP_DEBUG=1
+// OFONO_AT_DEBUG=1
+
 int main(int argc, char *argv[])
 {
   QApplication a(argc, argv);
